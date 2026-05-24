@@ -9,38 +9,267 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as OpportunitesRouteImport } from './routes/opportunites'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as InscriptionRouteImport } from './routes/inscription'
+import { Route as ForumRouteImport } from './routes/forum'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ActualitesRouteImport } from './routes/actualites'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MembreIndexRouteImport } from './routes/membre/index'
+import { Route as MembreProfilRouteImport } from './routes/membre/profil'
+import { Route as MembreDocumentsRouteImport } from './routes/membre/documents'
+import { Route as MembreCotisationsRouteImport } from './routes/membre/cotisations'
+import { Route as MembreCarteRouteImport } from './routes/membre/carte'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OpportunitesRoute = OpportunitesRouteImport.update({
+  id: '/opportunites',
+  path: '/opportunites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InscriptionRoute = InscriptionRouteImport.update({
+  id: '/inscription',
+  path: '/inscription',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForumRoute = ForumRouteImport.update({
+  id: '/forum',
+  path: '/forum',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActualitesRoute = ActualitesRouteImport.update({
+  id: '/actualites',
+  path: '/actualites',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MembreIndexRoute = MembreIndexRouteImport.update({
+  id: '/membre/',
+  path: '/membre/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreProfilRoute = MembreProfilRouteImport.update({
+  id: '/membre/profil',
+  path: '/membre/profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreDocumentsRoute = MembreDocumentsRouteImport.update({
+  id: '/membre/documents',
+  path: '/membre/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreCotisationsRoute = MembreCotisationsRouteImport.update({
+  id: '/membre/cotisations',
+  path: '/membre/cotisations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreCarteRoute = MembreCarteRouteImport.update({
+  id: '/membre/carte',
+  path: '/membre/carte',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/actualites': typeof ActualitesRoute
+  '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
+  '/forum': typeof ForumRoute
+  '/inscription': typeof InscriptionRoute
+  '/login': typeof LoginRoute
+  '/opportunites': typeof OpportunitesRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/membre/carte': typeof MembreCarteRoute
+  '/membre/cotisations': typeof MembreCotisationsRoute
+  '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/profil': typeof MembreProfilRoute
+  '/membre/': typeof MembreIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/actualites': typeof ActualitesRoute
+  '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
+  '/forum': typeof ForumRoute
+  '/inscription': typeof InscriptionRoute
+  '/login': typeof LoginRoute
+  '/opportunites': typeof OpportunitesRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/membre/carte': typeof MembreCarteRoute
+  '/membre/cotisations': typeof MembreCotisationsRoute
+  '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/profil': typeof MembreProfilRoute
+  '/membre': typeof MembreIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/actualites': typeof ActualitesRoute
+  '/contact': typeof ContactRoute
+  '/faq': typeof FaqRoute
+  '/forum': typeof ForumRoute
+  '/inscription': typeof InscriptionRoute
+  '/login': typeof LoginRoute
+  '/opportunites': typeof OpportunitesRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/membre/carte': typeof MembreCarteRoute
+  '/membre/cotisations': typeof MembreCotisationsRoute
+  '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/profil': typeof MembreProfilRoute
+  '/membre/': typeof MembreIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/actualites'
+    | '/contact'
+    | '/faq'
+    | '/forum'
+    | '/inscription'
+    | '/login'
+    | '/opportunites'
+    | '/reset-password'
+    | '/membre/carte'
+    | '/membre/cotisations'
+    | '/membre/documents'
+    | '/membre/profil'
+    | '/membre/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/actualites'
+    | '/contact'
+    | '/faq'
+    | '/forum'
+    | '/inscription'
+    | '/login'
+    | '/opportunites'
+    | '/reset-password'
+    | '/membre/carte'
+    | '/membre/cotisations'
+    | '/membre/documents'
+    | '/membre/profil'
+    | '/membre'
+  id:
+    | '__root__'
+    | '/'
+    | '/actualites'
+    | '/contact'
+    | '/faq'
+    | '/forum'
+    | '/inscription'
+    | '/login'
+    | '/opportunites'
+    | '/reset-password'
+    | '/membre/carte'
+    | '/membre/cotisations'
+    | '/membre/documents'
+    | '/membre/profil'
+    | '/membre/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActualitesRoute: typeof ActualitesRoute
+  ContactRoute: typeof ContactRoute
+  FaqRoute: typeof FaqRoute
+  ForumRoute: typeof ForumRoute
+  InscriptionRoute: typeof InscriptionRoute
+  LoginRoute: typeof LoginRoute
+  OpportunitesRoute: typeof OpportunitesRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  MembreCarteRoute: typeof MembreCarteRoute
+  MembreCotisationsRoute: typeof MembreCotisationsRoute
+  MembreDocumentsRoute: typeof MembreDocumentsRoute
+  MembreProfilRoute: typeof MembreProfilRoute
+  MembreIndexRoute: typeof MembreIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/opportunites': {
+      id: '/opportunites'
+      path: '/opportunites'
+      fullPath: '/opportunites'
+      preLoaderRoute: typeof OpportunitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inscription': {
+      id: '/inscription'
+      path: '/inscription'
+      fullPath: '/inscription'
+      preLoaderRoute: typeof InscriptionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forum': {
+      id: '/forum'
+      path: '/forum'
+      fullPath: '/forum'
+      preLoaderRoute: typeof ForumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/actualites': {
+      id: '/actualites'
+      path: '/actualites'
+      fullPath: '/actualites'
+      preLoaderRoute: typeof ActualitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +277,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/membre/': {
+      id: '/membre/'
+      path: '/membre'
+      fullPath: '/membre/'
+      preLoaderRoute: typeof MembreIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre/profil': {
+      id: '/membre/profil'
+      path: '/membre/profil'
+      fullPath: '/membre/profil'
+      preLoaderRoute: typeof MembreProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre/documents': {
+      id: '/membre/documents'
+      path: '/membre/documents'
+      fullPath: '/membre/documents'
+      preLoaderRoute: typeof MembreDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre/cotisations': {
+      id: '/membre/cotisations'
+      path: '/membre/cotisations'
+      fullPath: '/membre/cotisations'
+      preLoaderRoute: typeof MembreCotisationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre/carte': {
+      id: '/membre/carte'
+      path: '/membre/carte'
+      fullPath: '/membre/carte'
+      preLoaderRoute: typeof MembreCarteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActualitesRoute: ActualitesRoute,
+  ContactRoute: ContactRoute,
+  FaqRoute: FaqRoute,
+  ForumRoute: ForumRoute,
+  InscriptionRoute: InscriptionRoute,
+  LoginRoute: LoginRoute,
+  OpportunitesRoute: OpportunitesRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  MembreCarteRoute: MembreCarteRoute,
+  MembreCotisationsRoute: MembreCotisationsRoute,
+  MembreDocumentsRoute: MembreDocumentsRoute,
+  MembreProfilRoute: MembreProfilRoute,
+  MembreIndexRoute: MembreIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
