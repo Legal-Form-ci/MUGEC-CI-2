@@ -6,8 +6,16 @@
  * Police « manuscrite bleue » pour les valeurs saisies, conformément au CDC §5.0.
  */
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import watermarkUrl from "@/assets/mugec-watermark.png";
 import logoUrl from "@/assets/mugec-logo-header.png";
+
+export type AyantDroitItem = {
+  type: "pere" | "mere" | "conjoint" | "enfant" | "";
+  nom: string;
+  dateNaissance: string;
+  lieuNaissance: string;
+};
 
 export type DraftData = {
   nom?: string;
@@ -26,7 +34,13 @@ export type DraftData = {
   matriculePro?: string;
   dateEmbauche?: string;
   ayantsDroit?: string;
+  ayantsDroitList?: AyantDroitItem[];
+  /** Photo d'identité en data URL (JPEG/PNG base64) — encadrée dans le PDF. */
+  photoIdentite?: string;
+  /** Référence unique (matricule MUGEC ou identifiant brouillon) — encodée dans le QR. */
+  reference?: string;
 };
+
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers chargement images → dataURL (mis en cache)
@@ -88,6 +102,38 @@ function drawFooter(pdf: jsPDF) {
   pdf.text("Tel : 07 58 89 43 63 / 07 08 27 67 51", 105, h - 11, { align: "center" });
 }
 
+/**
+ * Cachet numérique + QR code (vérification d'authenticité).
+ * Dessine un cachet circulaire bleu et un QR code en bas à droite de la page.
+ */
+async function drawCertificate(pdf: jsPDF, reference: string) {
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const verifyUrl = `https://mugec-ci.ivoireprojet.com/verify/${encodeURIComponent(reference)}`;
+  const qrData = await QRCode.toDataURL(verifyUrl, { width: 256, margin: 1, color: { dark: "#0E3A8A", light: "#FFFFFF" } });
+  // QR
+  const qrSize = 28;
+  const qrX = pageW - qrSize - 16;
+  const qrY = pageH - qrSize - 30;
+  pdf.addImage(qrData, "PNG", qrX, qrY, qrSize, qrSize);
+  pdf.setFontSize(7); pdf.setTextColor(80, 80, 80); pdf.setFont("helvetica", "normal");
+  pdf.text("Vérifier", qrX + qrSize / 2, qrY + qrSize + 3, { align: "center" });
+  pdf.text(reference.slice(0, 18), qrX + qrSize / 2, qrY + qrSize + 6, { align: "center" });
+  // Cachet circulaire
+  const cx = 35, cy = pageH - 45, rOut = 16, rIn = 12;
+  pdf.setDrawColor(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2]); pdf.setLineWidth(0.8);
+  pdf.circle(cx, cy, rOut); pdf.circle(cx, cy, rIn);
+  pdf.setTextColor(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2]);
+  pdf.setFont("times", "bold"); pdf.setFontSize(8);
+  pdf.text("MUGEC-CI", cx, cy - 2, { align: "center" });
+  pdf.setFontSize(6); pdf.setFont("times", "normal");
+  pdf.text("CACHET", cx, cy + 1, { align: "center" });
+  pdf.text("NUMÉRIQUE", cx, cy + 4, { align: "center" });
+  pdf.setFontSize(5);
+  pdf.text(new Date().toLocaleDateString("fr-FR"), cx, cy + 8, { align: "center" });
+  pdf.setTextColor(0, 0, 0);
+}
+
 function drawWatermark(pdf: jsPDF, dataUrl: string, opacity = 0.10) {
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
@@ -144,6 +190,21 @@ export async function generateFicheAdhesionPDF(d: DraftData): Promise<Blob> {
 
   drawHeader(pdf, logo);
   drawWatermark(pdf, wm, 0.10);
+
+  // Photo d'identité encadrée (cadre pro 30x40mm en haut à droite)
+  if (d.photoIdentite) {
+    try {
+      const px = 165, py = 40, pw = 30, ph = 40;
+      pdf.setDrawColor(BRAND_BLUE[0], BRAND_BLUE[1], BRAND_BLUE[2]);
+      pdf.setLineWidth(0.6);
+      pdf.rect(px - 1, py - 1, pw + 2, ph + 2);
+      pdf.addImage(d.photoIdentite, "JPEG", px, py, pw, ph, undefined, "FAST");
+      pdf.setFont("times", "italic"); pdf.setFontSize(8);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text("Photo d'identité", px + pw / 2, py + ph + 4, { align: "center" });
+      pdf.setTextColor(0, 0, 0);
+    } catch { /* ignore image errors */ }
+  }
 
   // Titre principal
   pdf.setFont("times", "bold");
@@ -204,14 +265,46 @@ export async function generateFicheAdhesionPDF(d: DraftData): Promise<Blob> {
   dottedField(pdf, "E-mail : ", d.email, L, y, R); y += 6;
   dottedField(pdf, "Adresse postale : ", d.adresse, L, y, R); y += 10;
 
-  // 4. AYANTS-DROIT
+  // 4. AYANTS-DROIT — tableau structuré
   sectionTitle(pdf, "4", "INFORMATIONS SUR LES AYANTS-DROIT", L, y); y += 7;
-  const ad = (d.ayantsDroit ?? "").split("\n");
-  const findLine = (re: RegExp) => ad.find((l) => re.test(l))?.replace(re, "").trim() ?? "";
-  dottedField(pdf, "- Père : ", findLine(/p[èe]re\s*[:\-]?/i), L, y, R); y += 6;
-  dottedField(pdf, "- Mère : ", findLine(/m[èe]re\s*[:\-]?/i), L, y, R); y += 6;
-  dottedField(pdf, "- Enfants : ", findLine(/enfants?\s*[:\-]?/i), L, y, R); y += 6;
-  dottedField(pdf, "- Conjoint(E) : ", findLine(/conjoint\(?e?\)?\s*[:\-]?/i), L, y, R); y += 10;
+  const TYPE_LBL: Record<string, string> = { pere: "Père", mere: "Mère", conjoint: "Conjoint(e)", enfant: "Enfant" };
+  const items = (d.ayantsDroitList ?? []).filter((a) => a.type && a.nom);
+  if (items.length > 0) {
+    // En-tête de tableau
+    const colX = [L, L + 28, L + 90, L + 130];
+    const colW = [28, 62, 40, R - colX[3]];
+    pdf.setFont("times", "bold"); pdf.setFontSize(10);
+    pdf.setFillColor(230, 236, 245);
+    pdf.rect(L, y - 4.5, R - L, 6, "F");
+    pdf.text("Parenté", colX[0] + 1, y);
+    pdf.text("Nom complet", colX[1] + 1, y);
+    pdf.text("Né(e) le", colX[2] + 1, y);
+    pdf.text("Lieu", colX[3] + 1, y);
+    y += 4;
+    pdf.setFont("times", "normal");
+    items.forEach((a) => {
+      pdf.setDrawColor(200); pdf.setLineWidth(0.1);
+      pdf.line(L, y + 1.5, R, y + 1.5);
+      pdf.setTextColor(HANDWRITE_BLUE[0], HANDWRITE_BLUE[1], HANDWRITE_BLUE[2]);
+      pdf.setFont("courier", "bold"); pdf.setFontSize(10);
+      pdf.text(TYPE_LBL[a.type] ?? a.type, colX[0] + 1, y, { maxWidth: colW[0] - 2 });
+      pdf.text(a.nom || "—", colX[1] + 1, y, { maxWidth: colW[1] - 2 });
+      pdf.text(a.dateNaissance || "—", colX[2] + 1, y, { maxWidth: colW[2] - 2 });
+      pdf.text(a.lieuNaissance || "—", colX[3] + 1, y, { maxWidth: colW[3] - 2 });
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont("times", "normal");
+      y += 6;
+    });
+    y += 4;
+  } else {
+    // Fallback texte libre
+    const ad = (d.ayantsDroit ?? "").split("\n");
+    const findLine = (re: RegExp) => ad.find((l) => re.test(l))?.replace(re, "").trim() ?? "";
+    dottedField(pdf, "- Père : ", findLine(/p[èe]re\s*[:\-]?/i), L, y, R); y += 6;
+    dottedField(pdf, "- Mère : ", findLine(/m[èe]re\s*[:\-]?/i), L, y, R); y += 6;
+    dottedField(pdf, "- Enfants : ", findLine(/enfants?\s*[:\-]?/i), L, y, R); y += 6;
+    dottedField(pdf, "- Conjoint(E) : ", findLine(/conjoint\(?e?\)?\s*[:\-]?/i), L, y, R); y += 10;
+  }
 
   // 5. ENGAGEMENT
   sectionTitle(pdf, "5", "ENGAGEMENT ET SIGNATURE", L, y); y += 7;
@@ -251,6 +344,7 @@ export async function generateFicheAdhesionPDF(d: DraftData): Promise<Blob> {
   pdf.text("• Deux (02) photos d'identité récentes de même tirage.", L, y); y += 5;
   pdf.text("• Les extraits de naissance pour les enfants", L, y);
 
+  await drawCertificate(pdf, d.reference || `DRAFT-${Date.now()}`);
   drawFooter(pdf);
   return pdf.output("blob");
 }
@@ -316,6 +410,7 @@ export async function generateAutorisationPrelevementPDF(d: DraftData): Promise<
   y += 22;
   pdf.text("Signature de l'Adhérent (Précédée de la mention manuscrite « Lu et approuvé »)", L, y);
 
+  await drawCertificate(pdf, d.reference || `PREL-${Date.now()}`);
   drawFooter(pdf);
   return pdf.output("blob");
 }

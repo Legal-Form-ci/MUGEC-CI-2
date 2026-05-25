@@ -7,11 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
+
 import { AuthProvider } from "@/lib/auth";
-
 import appCss from "../styles.css?url";
-
 
 function NotFoundComponent() {
   return (
@@ -75,30 +73,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités Territoriales" },
-      {
-        name: "description",
-        content:
-          "Plateforme officielle de la MUGEC-CI : inscription en ligne, espace membre, cotisations et services aux agents des collectivités territoriales de Côte d'Ivoire.",
-      },
-      { name: "author", content: "MUGEC-CI" },
-      { property: "og:title", content: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités Territoriales" },
-      {
-        property: "og:description",
-        content: "Inscrivez-vous à la MUGEC-CI en ligne et accédez à votre espace membre sécurisé.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités Territoriales" },
+      { title: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités" },
       { name: "description", content: "MUGEC-CI est une plateforme dédiée aux agents des collectivités territoriales, facilitant l’accès aux informations, services et démarches liés à la mutuelle." },
+      { name: "author", content: "Lovable" },
+      { property: "og:title", content: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités" },
       { property: "og:description", content: "MUGEC-CI est une plateforme dédiée aux agents des collectivités territoriales, facilitant l’accès aux informations, services et démarches liés à la mutuelle." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MUGEC-CI — Mutuelle Générale du Personnel des Collectivités" },
       { name: "twitter:description", content: "MUGEC-CI est une plateforme dédiée aux agents des collectivités territoriales, facilitant l’accès aux informations, services et démarches liés à la mutuelle." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/OI6nUHN0rMdlKjHmlXGUEQqHcM52/social-images/social-1779221804450-MUGEC-CI.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/OI6nUHN0rMdlKjHmlXGUEQqHcM52/social-images/social-1779221804450-MUGEC-CI.webp" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/v4bzOAwB95UUgZRmpFou7lsqiq03/social-images/social-1779636555574-MUGEC-CI.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/v4bzOAwB95UUgZRmpFou7lsqiq03/social-images/social-1779636555574-MUGEC-CI.webp" },
     ],
     links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
     ],
   }),
   shellComponent: RootShell,
@@ -109,7 +101,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
@@ -128,9 +120,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Outlet />
-        <Toaster richColors position="top-right" />
       </AuthProvider>
     </QueryClientProvider>
   );
 }
-

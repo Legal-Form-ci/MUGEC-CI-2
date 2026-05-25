@@ -988,10 +988,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_dashboard_stats: { Args: never; Returns: Json }
       calculate_prestation_amount: {
         Args: { _date_inscription?: string; _type: string }
         Returns: number
       }
+      can_manage_payments: { Args: { _user_id: string }; Returns: boolean }
+      current_user_dashboard_path: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1001,7 +1004,13 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      lookup_member_email_by_phone: {
+        Args: { p_phone: string }
+        Returns: string
+      }
+      miprojet_dashboard_stats: { Args: never; Returns: Json }
       open_member_rights_after_90_days: { Args: never; Returns: number }
+      resolve_login_email: { Args: { p_identifier: string }; Returns: string }
       role_for_prestation_step: { Args: { _step: number }; Returns: string }
       validate_prestation_step: {
         Args: { _action: string; _motif?: string; _request_id: string }

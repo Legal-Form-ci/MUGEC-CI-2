@@ -19,7 +19,8 @@ const memberSchema = z.object({
   fonction: z.string().trim().max(150).optional().nullable(),
   matricule_pro: z.string().trim().max(50).optional().nullable(),
   date_embauche: z.string().optional().nullable(),
-  ayants_droit: z.string().max(2000).optional().nullable(),
+  ayants_droit: z.string().max(4000).optional().nullable(),
+  photo_url: z.string().max(2_000_000).optional().nullable(),
   paiement_methode: z.enum(["orange", "mtn", "wave", "moov"]),
   payment_reference: z.string().min(3).max(80),
 });
@@ -62,6 +63,7 @@ export const finalizeRegistration = createServerFn({ method: "POST" })
         matricule_pro: data.matricule_pro,
         date_embauche: data.date_embauche || null,
         ayants_droit: data.ayants_droit,
+        photo_url: data.photo_url ?? null,
         statut: "actif",
         paiement_methode: data.paiement_methode,
         frais_paye: true,

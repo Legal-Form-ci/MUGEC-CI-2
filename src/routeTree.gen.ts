@@ -19,10 +19,12 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ActualitesRouteImport } from './routes/actualites'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembreIndexRouteImport } from './routes/membre/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as MembreProfilRouteImport } from './routes/membre/profil'
 import { Route as MembreDocumentsRouteImport } from './routes/membre/documents'
 import { Route as MembreCotisationsRouteImport } from './routes/membre/cotisations'
 import { Route as MembreCarteRouteImport } from './routes/membre/carte'
+import { Route as AdminMiprojetRouteImport } from './routes/admin/miprojet'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -74,6 +76,11 @@ const MembreIndexRoute = MembreIndexRouteImport.update({
   path: '/membre/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MembreProfilRoute = MembreProfilRouteImport.update({
   id: '/membre/profil',
   path: '/membre/profil',
@@ -94,6 +101,11 @@ const MembreCarteRoute = MembreCarteRouteImport.update({
   path: '/membre/carte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminMiprojetRoute = AdminMiprojetRouteImport.update({
+  id: '/admin/miprojet',
+  path: '/admin/miprojet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -105,10 +117,12 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/miprojet': typeof AdminMiprojetRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/admin/': typeof AdminIndexRoute
   '/membre/': typeof MembreIndexRoute
 }
 export interface FileRoutesByTo {
@@ -121,10 +135,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/miprojet': typeof AdminMiprojetRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/admin': typeof AdminIndexRoute
   '/membre': typeof MembreIndexRoute
 }
 export interface FileRoutesById {
@@ -138,10 +154,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/admin/miprojet': typeof AdminMiprojetRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/admin/': typeof AdminIndexRoute
   '/membre/': typeof MembreIndexRoute
 }
 export interface FileRouteTypes {
@@ -156,10 +174,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/admin/miprojet'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
     | '/membre/profil'
+    | '/admin/'
     | '/membre/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -172,10 +192,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/admin/miprojet'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
     | '/membre/profil'
+    | '/admin'
     | '/membre'
   id:
     | '__root__'
@@ -188,10 +210,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/admin/miprojet'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
     | '/membre/profil'
+    | '/admin/'
     | '/membre/'
   fileRoutesById: FileRoutesById
 }
@@ -205,10 +229,12 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OpportunitesRoute: typeof OpportunitesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  AdminMiprojetRoute: typeof AdminMiprojetRoute
   MembreCarteRoute: typeof MembreCarteRoute
   MembreCotisationsRoute: typeof MembreCotisationsRoute
   MembreDocumentsRoute: typeof MembreDocumentsRoute
   MembreProfilRoute: typeof MembreProfilRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   MembreIndexRoute: typeof MembreIndexRoute
 }
 
@@ -284,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembreIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/membre/profil': {
       id: '/membre/profil'
       path: '/membre/profil'
@@ -312,6 +345,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembreCarteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/miprojet': {
+      id: '/admin/miprojet'
+      path: '/admin/miprojet'
+      fullPath: '/admin/miprojet'
+      preLoaderRoute: typeof AdminMiprojetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -325,12 +365,24 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OpportunitesRoute: OpportunitesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  AdminMiprojetRoute: AdminMiprojetRoute,
   MembreCarteRoute: MembreCarteRoute,
   MembreCotisationsRoute: MembreCotisationsRoute,
   MembreDocumentsRoute: MembreDocumentsRoute,
   MembreProfilRoute: MembreProfilRoute,
+  AdminIndexRoute: AdminIndexRoute,
   MembreIndexRoute: MembreIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

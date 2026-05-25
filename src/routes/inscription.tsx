@@ -17,52 +17,44 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { finalizeRegistration } from "@/lib/inscription.functions";
 import { Check, CreditCard, User, ArrowLeft, ArrowRight, Download, FileText, BadgeCheck } from "lucide-react";
 import { generateFicheAdhesionPDF, generateAutorisationPrelevementPDF, downloadBlob, type DraftData } from "@/lib/pdf-documents";
+import { AyantsDroitFields, ayantsDroitToText, EMPTY_AYANT, type AyantDroit } from "@/components/AyantsDroitFields";
+import { FileUploadPreview, PhotoIdentityUpload, type UploadedFile } from "@/components/FileUploadPreview";
 
 export const Route = createFileRoute("/inscription")({ component: Page });
-const DRAFT_KEY = "mugec_inscription_draft_v1";
-
+const DRAFT_KEY = "mugec_inscription_draft_v2";
 
 const step1Schema = z.object({
   nom: z.string().trim().min(2, "Nom requis").max(100),
   prenoms: z.string().trim().min(2, "Prénoms requis").max(150),
-  dateNaissance: z.string().min(1, "Date de naissance requise").refine((v) => {
-    const d = new Date(v);
-    if (Number.isNaN(d.getTime())) return false;
-    const eighteen = new Date(); eighteen.setFullYear(eighteen.getFullYear() - 18);
-    return d <= eighteen;
-  }, "Vous devez être majeur(e) (18 ans minimum)."),
-  lieuNaissance: z.string().trim().min(2, "Lieu de naissance requis").max(100),
+  dateNaissance: z.string().min(1, "Date de naissance requise"),
+  lieuNaissance: z.string().trim().min(2).max(100),
   sexe: z.enum(["M", "F"]),
-  email: z.string().trim().email("Email invalide").max(255),
-  telephone: z.string().trim().min(8, "Téléphone requis").max(20),
-  cni: z.string().trim().min(4, "N° CNI / Passeport requis").max(30),
-  adresse: z.string().trim().min(2, "Adresse postale requise").max(255),
-  collectivite: z.string().trim().min(2, "Collectivité requise").max(150),
-  region: z.string().trim().max(100).optional().or(z.literal("")),
-  direction: z.string().trim().max(150).optional().or(z.literal("")),
-  fonction: z.string().trim().max(150).optional().or(z.literal("")),
-  matriculePro: z.string().trim().min(2, "Matricule Solde requis").max(50),
-  dateEmbauche: z.string().optional().or(z.literal("")),
-  ayantsDroit: z.string().max(2000).optional().or(z.literal("")),
-  photoIdentite: z.string().optional().or(z.literal("")),
+  email: z.string().trim().email("Email invalide"),
+  telephone: z.string().trim().min(8).max(20),
+  cni: z.string().trim().min(4).max(30),
+  adresse: z.string().trim().min(2).max(255),
+  collectivite: z.string().trim().min(2).max(150),
+  matriculePro: z.string().trim().min(2).max(50),
 });
 
-const step2Schema = z.object({
-  ficheSignee: z.string().min(1, "La fiche d'adhésion signée est obligatoire."),
-  autorisationSignee: z.string().min(1, "L'autorisation de prélèvement signée est obligatoire."),
-  cniDocument: z.string().min(1, "La copie CNI ou passeport est obligatoire."),
-  extraitNaissance: z.string().min(1, "L'extrait de naissance est obligatoire."),
-});
-
-const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/).regex(/[^A-Za-z0-9]/);
+type PieceType = "cni" | "passeport";
 
 type FormData = {
   nom: string; prenoms: string; dateNaissance: string; lieuNaissance: string;
   sexe: "M" | "F"; email: string; telephone: string; cni: string; adresse: string;
   collectivite: string; region: string; direction?: string; fonction: string;
-  matriculePro?: string; dateEmbauche?: string; ayantsDroit?: string; photoIdentite?: string;
-  ficheSignee?: string; autorisationSignee?: string; cniDocument?: string; extraitNaissance?: string;
-  password: string; paiement: "orange" | "mtn" | "wave" | "moov";
+  matriculePro?: string; dateEmbauche?: string;
+  ayantsDroit: AyantDroit[];
+  photoIdentite: UploadedFile | null;
+  pieceType: PieceType;
+  cniRecto: UploadedFile | null;
+  cniVerso: UploadedFile | null;
+  passeport: UploadedFile | null;
+  extraitNaissance: UploadedFile | null;
+  ficheSignee: UploadedFile | null;
+  autorisationSignee: UploadedFile | null;
+  password: string;
+  paiement: "orange" | "mtn" | "wave" | "moov";
 };
 
 const steps = [
@@ -72,15 +64,21 @@ const steps = [
   { id: 4, label: "Confirmation", icon: BadgeCheck },
 ];
 
+const passwordSchema = z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/).regex(/[^A-Za-z0-9]/);
+
 function Page() {
   const nav = useNavigate();
   const finalize = useServerFn(finalizeRegistration);
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<Partial<FormData>>({ sexe: "M", paiement: "orange" });
+  const [data, setData] = useState<Partial<FormData>>({
+    sexe: "M",
+    paiement: "orange",
+    pieceType: "cni",
+    ayantsDroit: [{ ...EMPTY_AYANT }],
+  });
   const [submitting, setSubmitting] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState<"fiche" | "autorisation" | null>(null);
 
-  // Reprise du brouillon depuis localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
@@ -91,57 +89,92 @@ function Page() {
     } catch { /* ignore */ }
   }, []);
 
-  // Persistance automatique locale + serveur (avec device fingerprint requis par RLS)
   useEffect(() => {
     const t = setTimeout(() => {
-      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(data)); } catch { /* ignore */ }
-      if (isSupabaseConfigured && data.email && data.email.includes("@")) {
-        let fp = "";
-        try {
-          fp = localStorage.getItem("mugec_device_fp") ?? "";
-          if (!fp) {
-            fp = (crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`) + "-" + (navigator.userAgent.length);
-            localStorage.setItem("mugec_device_fp", fp);
-          }
-        } catch { /* ignore */ }
-        if (fp.length >= 8) {
-          supabase.from("registration_drafts").upsert(
-            { email: data.email.toLowerCase(), telephone: data.telephone ?? null, nom: data.nom ?? null, prenoms: data.prenoms ?? null, step, data, device_fingerprint: fp },
-            { onConflict: "email" },
-          ).then(() => { /* noop */ });
-        }
-      }
-    }, 800);
+      try {
+        // Strip sensitive fields (password, identity photo) before persisting draft.
+        const { password: _pw, photoIdentite: _ph, ...safe } = data as FormData & Record<string, unknown>;
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+      } catch { /* ignore */ }
+    }, 600);
     return () => clearTimeout(t);
-  }, [data, step]);
+  }, [data]);
 
-
-  const upd = (k: keyof FormData, v: string) => setData((d) => ({ ...d, [k]: v }));
+  const upd = <K extends keyof FormData>(k: K, v: FormData[K]) =>
+    setData((d) => ({ ...d, [k]: v }));
   const val = (k: keyof FormData) => (data[k] ?? "") as string;
+
+  const ayantsText = () => ayantsDroitToText(data.ayantsDroit ?? []);
+
+  function pdfPayload(): DraftData {
+    return {
+      nom: data.nom,
+      prenoms: data.prenoms,
+      dateNaissance: data.dateNaissance,
+      lieuNaissance: data.lieuNaissance,
+      sexe: data.sexe,
+      email: data.email,
+      telephone: data.telephone,
+      cni: data.cni,
+      adresse: data.adresse,
+      collectivite: data.collectivite,
+      region: data.region,
+      direction: data.direction,
+      fonction: data.fonction,
+      matriculePro: data.matriculePro,
+      dateEmbauche: data.dateEmbauche,
+      ayantsDroit: ayantsText(),
+      ayantsDroitList: data.ayantsDroit,
+      photoIdentite: data.photoIdentite?.dataUrl,
+    };
+  }
 
   async function downloadFiche() {
     setGeneratingPdf("fiche");
     try {
-      const blob = await generateFicheAdhesionPDF(data as DraftData);
+      const blob = await generateFicheAdhesionPDF(pdfPayload());
       downloadBlob(blob, `fiche-inscription-${data.nom ?? "mugec"}.pdf`);
     } finally { setGeneratingPdf(null); }
   }
   async function downloadAutorisation() {
     setGeneratingPdf("autorisation");
     try {
-      const blob = await generateAutorisationPrelevementPDF(data as DraftData);
+      const blob = await generateAutorisationPrelevementPDF(pdfPayload());
       downloadBlob(blob, `autorisation-prelevement-${data.nom ?? "mugec"}.pdf`);
     } finally { setGeneratingPdf(null); }
   }
 
-
   function validateStep(): boolean {
     try {
-      if (step === 1) step1Schema.parse(data);
-      if (step === 2) step2Schema.parse(data);
+      if (step === 1) {
+        step1Schema.parse(data);
+        if (!data.photoIdentite) {
+          toast.error("La photo d'identité est obligatoire.");
+          return false;
+        }
+        const valid = (data.ayantsDroit ?? []).filter((a) => a.type && a.nom.trim());
+        if (valid.length === 0) {
+          toast.error("Renseignez au moins un ayant-droit.");
+          return false;
+        }
+      }
+      if (step === 2) {
+        if (!data.ficheSignee) { toast.error("La fiche d'adhésion signée est obligatoire."); return false; }
+        if (!data.autorisationSignee) { toast.error("L'autorisation de prélèvement signée est obligatoire."); return false; }
+        if (!data.extraitNaissance) { toast.error("L'extrait de naissance est obligatoire."); return false; }
+        if (data.pieceType === "cni") {
+          if (!data.cniRecto || !data.cniVerso) {
+            toast.error("Veuillez téléverser la CNI recto ET verso.");
+            return false;
+          }
+        } else if (!data.passeport) {
+          toast.error("Veuillez téléverser la copie du passeport.");
+          return false;
+        }
+      }
       if (step === 3) {
         if (!data.password || !passwordSchema.safeParse(data.password).success) {
-          toast.error("Le mot de passe doit contenir 8 caractères, une majuscule, un chiffre et un caractère spécial.");
+          toast.error("Mot de passe : 8 caractères, 1 majuscule, 1 chiffre, 1 spécial.");
           return false;
         }
       }
@@ -159,30 +192,25 @@ function Page() {
   async function submit() {
     if (!validateStep()) return;
     if (!isSupabaseConfigured) {
-      toast.error("Supabase non configuré. Contactez l’administrateur.");
+      toast.error("Supabase non configuré.");
       return;
     }
     setSubmitting(true);
     try {
-      // 1) Création du compte Auth
       const { error: authErr } = await supabase.auth.signUp({
         email: data.email!,
         password: data.password!,
         options: { emailRedirectTo: `${window.location.origin}/membre` },
       });
       if (authErr && !/already/i.test(authErr.message)) throw authErr;
-
-      // 2) Connexion immédiate
       const { error: signInErr } = await supabase.auth.signInWithPassword({
         email: data.email!,
         password: data.password!,
       });
       if (signInErr) throw signInErr;
 
-      // 3) Référence paiement simulée — à remplacer par webhook CinetPay/Fedapay
       const payRef = `${(data.paiement ?? "pay").toUpperCase()}-${Date.now()}`;
 
-      // 4) Finalisation : crée le membre, la souscription split, déclenche notifications
       await finalize({
         data: {
           nom: data.nom!,
@@ -200,7 +228,8 @@ function Page() {
           fonction: data.fonction!,
           matricule_pro: data.matriculePro || null,
           date_embauche: data.dateEmbauche || null,
-          ayants_droit: data.ayantsDroit || null,
+          ayants_droit: ayantsText() || null,
+          photo_url: data.photoIdentite?.dataUrl || null,
           paiement_methode: data.paiement!,
           payment_reference: payRef,
         },
@@ -209,7 +238,6 @@ function Page() {
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       toast.success("Inscription validée. Bienvenue !");
       nav({ to: "/membre" });
-
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Erreur inconnue";
       toast.error(msg);
@@ -245,39 +273,57 @@ function Page() {
           <Watermark opacity={0.07} />
           <CardContent className="relative p-8">
             {step === 1 && (
-              <div className="grid gap-4 md:grid-cols-2">
-                <F label="Nom" v={val("nom")} on={(v) => upd("nom", v)} />
-                <F label="Prénoms" v={val("prenoms")} on={(v) => upd("prenoms", v)} />
-                <F label="Date de naissance" type="date" v={val("dateNaissance")} on={(v) => upd("dateNaissance", v)} />
-                <F label="Lieu de naissance" v={val("lieuNaissance")} on={(v) => upd("lieuNaissance", v)} />
-                <div>
-                  <Label>Sexe</Label>
-                  <Select value={data.sexe} onValueChange={(v) => upd("sexe", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="M">Masculin</SelectItem>
-                      <SelectItem value="F">Féminin</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <F label="Nom" v={val("nom")} on={(v) => upd("nom", v)} />
+                  <F label="Prénoms" v={val("prenoms")} on={(v) => upd("prenoms", v)} />
+                  <F label="Date de naissance" type="date" v={val("dateNaissance")} on={(v) => upd("dateNaissance", v)} />
+                  <F label="Lieu de naissance" v={val("lieuNaissance")} on={(v) => upd("lieuNaissance", v)} />
+                  <div>
+                    <Label>Sexe</Label>
+                    <Select value={data.sexe} onValueChange={(v) => upd("sexe", v as "M" | "F")}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="M">Masculin</SelectItem>
+                        <SelectItem value="F">Féminin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <F label="N° CNI / Passeport" v={val("cni")} on={(v) => upd("cni", v)} />
+                  <F label="Matricule Solde" v={val("matriculePro")} on={(v) => upd("matriculePro", v)} />
+                  <F label="E-mail" type="email" v={val("email")} on={(v) => upd("email", v)} />
+                  <F label="Téléphone (WhatsApp)" v={val("telephone")} on={(v) => upd("telephone", v)} />
+                  <F label="Collectivité d'origine" v={val("collectivite")} on={(v) => upd("collectivite", v)} />
+                  <F label="Région" v={val("region")} on={(v) => upd("region", v)} />
+                  <F label="Direction / Service" v={val("direction")} on={(v) => upd("direction", v)} />
+                  <F label="Fonction" v={val("fonction")} on={(v) => upd("fonction", v)} />
+                  <F label="Date d'embauche" type="date" v={val("dateEmbauche")} on={(v) => upd("dateEmbauche", v)} />
                 </div>
-                <F label="N° CNI" v={val("cni")} on={(v) => upd("cni", v)} />
-                <F label="Matricule Solde" v={val("matriculePro")} on={(v) => upd("matriculePro", v)} />
-                <F label="E-mail" type="email" v={val("email")} on={(v) => upd("email", v)} />
-                <F label="Téléphone (WhatsApp)" v={val("telephone")} on={(v) => upd("telephone", v)} />
-                <FileF label="Photo d’identité (JPG/PNG, max 2 Mo)" v={val("photoIdentite")} on={(v) => upd("photoIdentite", v)} />
-                <F label="Collectivité d'origine" v={val("collectivite")} on={(v) => upd("collectivite", v)} />
-                <F label="Région" v={val("region")} on={(v) => upd("region", v)} />
-                <F label="Direction / Service" v={val("direction")} on={(v) => upd("direction", v)} />
-                <F label="Fonction" v={val("fonction")} on={(v) => upd("fonction", v)} />
-                <F label="Date d'embauche" type="date" v={val("dateEmbauche")} on={(v) => upd("dateEmbauche", v)} />
-                <div className="md:col-span-2">
-                  <Label>Adresse</Label>
+
+                <div>
+                  <Label>Adresse postale</Label>
                   <Textarea value={val("adresse")} onChange={(e) => upd("adresse", e.target.value)} rows={2} />
                 </div>
-                <div className="md:col-span-2">
-                  <Label>Ayants-droit (père, mère, conjoint, enfants — maximum 4 enfants)</Label>
-                  <Textarea value={val("ayantsDroit")} onChange={(e) => upd("ayantsDroit", e.target.value)} rows={3}
-                    placeholder="Ex : Père — Kouadio Koffi. Mère — Aya Koffi. Conjoint — ... Enfants : nom, prénoms, date de naissance." />
+
+                <div className="rounded-md border bg-secondary/30 p-4">
+                  <PhotoIdentityUpload
+                    label="Photo d'identité (auto-cadrée, 3:4)"
+                    value={data.photoIdentite ?? null}
+                    onChange={(v) => upd("photoIdentite", v)}
+                  />
+                </div>
+
+                <div className="rounded-md border bg-secondary/30 p-4">
+                  <Label className="text-base font-semibold">
+                    Ayants-droit (maximum 4)
+                  </Label>
+                  <p className="mb-3 mt-1 text-xs text-muted-foreground">
+                    Renseignez chaque ayant-droit : lien de parenté, nom complet, date et lieu de naissance.
+                  </p>
+                  <AyantsDroitFields
+                    value={data.ayantsDroit ?? [{ ...EMPTY_AYANT }]}
+                    onChange={(v) => upd("ayantsDroit", v)}
+                  />
                 </div>
               </div>
             )}
@@ -289,32 +335,86 @@ function Page() {
                     <FileText className="h-4 w-4" /> Documents pré-remplis
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Téléchargez les documents pré-remplis, imprimez-les, signez-les puis téléversez les scans exigés à l’étape suivante.
+                    Téléchargez les documents pré-remplis, imprimez-les, signez-les puis téléversez les scans exigés ci-dessous.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" onClick={downloadFiche} disabled={generatingPdf !== null}>
                       <Download className="mr-2 h-4 w-4" />
-                      {generatingPdf === "fiche" ? "Génération…" : "Fiche d’inscription (pré-remplie)"}
+                      {generatingPdf === "fiche" ? "Génération…" : "Fiche d'inscription (pré-remplie)"}
                     </Button>
                     <Button type="button" size="sm" variant="outline" onClick={downloadAutorisation} disabled={generatingPdf !== null}>
                       <Download className="mr-2 h-4 w-4" />
                       {generatingPdf === "autorisation" ? "Génération…" : "Autorisation de prélèvement (pré-remplie)"}
                     </Button>
-                    <a href="/documents/reglement-interieur-mugec-ci.pdf" target="_blank" rel="noreferrer"
-                       className="inline-flex h-9 items-center rounded-md border px-3 text-sm hover:bg-secondary">
-                      <FileText className="mr-2 h-4 w-4" /> Règlement intérieur
-                    </a>
                   </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <FileF label="Fiche d’inscription signée" v={val("ficheSignee")} on={(v) => upd("ficheSignee", v)} />
-                  <FileF label="Autorisation de prélèvement signée" v={val("autorisationSignee")} on={(v) => upd("autorisationSignee", v)} />
-                  <FileF label="Copie CNI ou passeport" v={val("cniDocument")} on={(v) => upd("cniDocument", v)} />
-                  <FileF label="Extrait de naissance" v={val("extraitNaissance")} on={(v) => upd("extraitNaissance", v)} />
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FileUploadPreview
+                    label="Fiche d'inscription signée"
+                    value={data.ficheSignee ?? null}
+                    onChange={(v) => upd("ficheSignee", v)}
+                  />
+                  <FileUploadPreview
+                    label="Autorisation de prélèvement signée"
+                    value={data.autorisationSignee ?? null}
+                    onChange={(v) => upd("autorisationSignee", v)}
+                  />
                 </div>
+
+                <div className="rounded-md border bg-secondary/30 p-4">
+                  <Label>Type de pièce d'identité</Label>
+                  <Select
+                    value={data.pieceType}
+                    onValueChange={(v) => {
+                      upd("pieceType", v as PieceType);
+                      // reset autres
+                      if (v === "cni") upd("passeport", null);
+                      else { upd("cniRecto", null); upd("cniVerso", null); }
+                    }}
+                  >
+                    <SelectTrigger className="mt-2 max-w-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cni">Carte Nationale d'Identité (CNI)</SelectItem>
+                      <SelectItem value="passeport">Passeport</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {data.pieceType === "cni" ? (
+                    <div className="mt-4 grid gap-6 md:grid-cols-2">
+                      <FileUploadPreview
+                        label="CNI — Recto"
+                        value={data.cniRecto ?? null}
+                        onChange={(v) => upd("cniRecto", v)}
+                        aspect="document"
+                      />
+                      <FileUploadPreview
+                        label="CNI — Verso"
+                        value={data.cniVerso ?? null}
+                        onChange={(v) => upd("cniVerso", v)}
+                        aspect="document"
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-4">
+                      <FileUploadPreview
+                        label="Passeport (page d'identité)"
+                        value={data.passeport ?? null}
+                        onChange={(v) => upd("passeport", v)}
+                        aspect="document"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <FileUploadPreview
+                  label="Extrait de naissance"
+                  value={data.extraitNaissance ?? null}
+                  onChange={(v) => upd("extraitNaissance", v)}
+                  aspect="document"
+                />
               </div>
             )}
-
 
             {step === 3 && (
               <div className="space-y-6">
@@ -327,7 +427,7 @@ function Page() {
                       { id: "wave", name: "Wave" },
                       { id: "moov", name: "Moov Money" },
                     ].map((m) => (
-                      <button key={m.id} type="button" onClick={() => upd("paiement", m.id)}
+                      <button key={m.id} type="button" onClick={() => upd("paiement", m.id as FormData["paiement"])}
                         className={`rounded-md border p-4 text-sm font-medium transition ${
                           data.paiement === m.id ? "border-primary bg-primary/10 text-primary" : "hover:bg-secondary"
                         }`}>{m.name}</button>
@@ -390,20 +490,6 @@ function F({ label, v, on, type = "text" }: { label: string; v: string; on: (v: 
     <div>
       <Label>{label}</Label>
       <Input type={type} value={v} onChange={(e) => on(e.target.value)} />
-    </div>
-  );
-}
-
-function FileF({ label, v, on }: { label: string; v: string; on: (v: string) => void }) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <Input
-        type="file"
-        accept=".pdf,image/png,image/jpeg"
-        onChange={(e) => on(e.target.files?.[0]?.name ?? "")}
-      />
-      {v ? <p className="mt-1 text-xs text-muted-foreground">Fichier sélectionné : {v}</p> : null}
     </div>
   );
 }

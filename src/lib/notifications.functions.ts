@@ -50,6 +50,15 @@ async function sendWhatsapp(to: string, body: string) {
   }
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 async function sendEmail(to: string, subject: string, body: string) {
   const url = process.env.EMAIL_API_URL;
   const key = process.env.EMAIL_API_KEY;
@@ -62,9 +71,9 @@ async function sendEmail(to: string, subject: string, body: string) {
       body: JSON.stringify({
         from,
         to: [to],
-        subject,
+        subject: escapeHtml(subject),
         text: body,
-        html: `<pre style="font-family:Inter,Arial,sans-serif;white-space:pre-wrap">${body}</pre>`,
+        html: `<pre style="font-family:Inter,Arial,sans-serif;white-space:pre-wrap">${escapeHtml(body)}</pre>`,
       }),
     });
     return { ok: res.ok, status: res.status };
@@ -95,32 +104,60 @@ export const dispatchNotification = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context: ctx }) => {
-    const { event, memberId, userId, to, channels, context } = data;
+    let { event, memberId, userId, to, channels, context } = data;
     // Authorization: caller must be admin OR be sending to their own user/member record
     const callerId = ctx.userId;
     const isSelfUser = userId && userId === callerId;
-    let isSelfMember = false;
-    if (!isSelfUser && memberId) {
+    let memberRow: { user_id: string; email: string | null; telephone: string | null } | null = null;
+    if (memberId) {
       const { data: m } = await supabaseAdmin
         .from("members")
-        .select("user_id")
+        .select("user_id,email,telephone")
         .eq("id", memberId)
         .maybeSingle();
-      isSelfMember = m?.user_id === callerId;
+      memberRow = m ?? null;
     }
-    if (!isSelfUser && !isSelfMember) {
-      const { data: roles } = await supabaseAdmin
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", callerId);
-      const adminRoles = new Set([
-        "super_admin","admin_national","admin_regional","admin_local","agent_saisie",
-        "president","secretaire_general","tresorier_national","commissaire_comptes",
-        "directeur_executif","comite_controle","conseil_sages","secretaire_regional",
-        "tresorier_regional","delegue_section",
+    const isSelfMember = !!memberRow && memberRow.user_id === callerId;
+
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", callerId);
+    const adminRoles = new Set([
+      "super_admin","admin_national","admin_regional","admin_local","agent_saisie",
+      "president","secretaire_general","tresorier_national","commissaire_comptes",
+      "directeur_executif","comite_controle","conseil_sages","secretaire_regional",
+      "tresorier_regional","delegue_section",
+    ]);
+    const isAdmin = (roles ?? []).some((r) => adminRoles.has(String(r.role)));
+
+    if (!isAdmin) {
+      if (!isSelfUser && !isSelfMember) {
+        throw new Error("Forbidden: admin role required");
+      }
+      // Non-admin: lock down to a safe event whitelist and verified recipients only.
+      const SELF_ALLOWED_EVENTS = new Set([
+        "registration_completed",
+        "payment_confirmed",
+        "prestation_submitted",
       ]);
-      const isAdmin = (roles ?? []).some((r) => adminRoles.has(String(r.role)));
-      if (!isAdmin) throw new Error("Forbidden: admin role required");
+      if (!SELF_ALLOWED_EVENTS.has(event)) {
+        throw new Error("Forbidden: event not allowed for non-admin caller");
+      }
+      // Force userId to the caller and ignore client-supplied recipient addresses.
+      userId = callerId;
+      to = {
+        email: memberRow?.email ?? undefined,
+        phone: memberRow?.telephone ?? undefined,
+        whatsapp: memberRow?.telephone ?? undefined,
+      };
+      // Strip user-controlled free-text context fields that templates may inline.
+      const safeContext: Record<string, string | number> = {};
+      for (const [k, v] of Object.entries(context)) {
+        if (k === "message" || k === "html" || k === "body") continue;
+        safeContext[k] = v;
+      }
+      context = safeContext;
     }
 
 

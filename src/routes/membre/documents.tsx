@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { SiteHeader } from "@/components/SiteHeader";
-import { SiteFooter } from "@/components/SiteFooter";
+import { DashboardHeader, MEMBRE_NAV } from "@/components/DashboardHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
@@ -33,7 +32,7 @@ function Page() {
 
   return (
     <div className="min-h-screen bg-background">
-      <SiteHeader />
+      <DashboardHeader title="Membre MUGEC-CI" nav={MEMBRE_NAV} />
       <section className="container mx-auto max-w-4xl px-4 py-10">
         <h1 className="text-2xl font-bold">Mes documents</h1>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -73,7 +72,6 @@ function Page() {
           </CardContent>
         </Card>
       </section>
-      <SiteFooter />
     </div>
   );
 }
