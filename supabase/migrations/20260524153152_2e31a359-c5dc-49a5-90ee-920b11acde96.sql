@@ -18,7 +18,7 @@ BEGIN
     ) VALUES (
       '00000000-0000-0000-0000-000000000000', v_inoce_id, 'authenticated', 'authenticated',
       'inoceadmin@miprojet.local',
-      crypt('@Massa29012020', gen_salt('bf')),
+      crypt('__ROTATE_ME__', gen_salt('bf')),
       now(),
       jsonb_build_object('provider','email','providers',ARRAY['email'],'username','inoceadmin'),
       jsonb_build_object('username','inoceadmin','display_name','Super Admin MiProjet'),
@@ -30,7 +30,7 @@ BEGIN
             'email', v_inoce_id::text, now(), now(), now());
   ELSE
     SELECT id INTO v_inoce_id FROM auth.users WHERE email = 'inoceadmin@miprojet.local';
-    UPDATE auth.users SET encrypted_password = crypt('@Massa29012020', gen_salt('bf')), updated_at = now()
+    UPDATE auth.users SET encrypted_password = crypt('__ROTATE_ME__', gen_salt('bf')), updated_at = now()
     WHERE id = v_inoce_id;
   END IF;
 
@@ -48,7 +48,7 @@ BEGIN
     ) VALUES (
       '00000000-0000-0000-0000-000000000000', v_mugec_id, 'authenticated', 'authenticated',
       'adminmgec@mugec-ci.local',
-      crypt('@Mugec-CI26', gen_salt('bf')),
+      crypt('__ROTATE_ME__', gen_salt('bf')),
       now(),
       jsonb_build_object('provider','email','providers',ARRAY['email'],'username','adminmgec'),
       jsonb_build_object('username','adminmgec','display_name','Admin MUGEC-CI'),
@@ -60,7 +60,7 @@ BEGIN
             'email', v_mugec_id::text, now(), now(), now());
   ELSE
     SELECT id INTO v_mugec_id FROM auth.users WHERE email = 'adminmgec@mugec-ci.local';
-    UPDATE auth.users SET encrypted_password = crypt('@Mugec-CI26', gen_salt('bf')), updated_at = now()
+    UPDATE auth.users SET encrypted_password = crypt('__ROTATE_ME__', gen_salt('bf')), updated_at = now()
     WHERE id = v_mugec_id;
   END IF;
 

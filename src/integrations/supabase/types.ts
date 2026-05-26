@@ -44,6 +44,42 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_messages: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          nom: string
+          sujet: string | null
+          telephone: string | null
+          traite: boolean
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          nom: string
+          sujet?: string | null
+          telephone?: string | null
+          traite?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          nom?: string
+          sujet?: string | null
+          telephone?: string | null
+          traite?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cotisations: {
         Row: {
           created_at: string
@@ -1008,6 +1044,7 @@ export type Database = {
         Args: { p_phone: string }
         Returns: string
       }
+      member_public_info: { Args: { p_matricule: string }; Returns: Json }
       miprojet_dashboard_stats: { Args: never; Returns: Json }
       open_member_rights_after_90_days: { Args: never; Returns: number }
       resolve_login_email: { Args: { p_identifier: string }; Returns: string }

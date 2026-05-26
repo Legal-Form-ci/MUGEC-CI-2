@@ -1,11 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { DashboardHeader, MEMBRE_NAV } from "@/components/DashboardHeader";
+import { MembreLayout } from "@/components/membre/MembreLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Watermark } from "@/components/Watermark";
+
 import logo from "@/assets/mugec-logo.png";
 import watermarkUrl from "@/assets/mugec-watermark.png";
 import { Download, Printer, Loader2 } from "lucide-react";
@@ -185,89 +185,228 @@ function Page() {
   if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader title="Membre MUGEC-CI" nav={MEMBRE_NAV} />
-      <section className="container mx-auto max-w-4xl px-4 py-10">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">Carte et fiche membre</h1>
+    <MembreLayout title="Carte de membre" subtitle="Format CR80 — recto / verso officiel MUGEC-CI">
+      <section className="mx-auto max-w-5xl space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">Votre carte membre</h2>
+            <p className="text-sm text-muted-foreground">Imprimable en format carte bancaire (85,6 × 54 mm).</p>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" /> Imprimer
             </Button>
-            <Button onClick={downloadPDF} disabled={busy}>
-              <Download className="mr-2 h-4 w-4" /> {busy ? "Génération…" : "Télécharger en PDF"}
+            <Button onClick={downloadPDF} disabled={busy} className="bg-primary">
+              <Download className="mr-2 h-4 w-4" /> {busy ? "Génération…" : "Télécharger le PDF"}
             </Button>
           </div>
         </div>
 
-        <Card className="overflow-hidden">
-          <CardContent className="p-0">
-            {/* Fiche imprimable avec FILIGRANE */}
-            <div ref={ref} className="relative bg-white p-10 text-slate-800" style={{ minHeight: 1000 }}>
-              <Watermark opacity={0.08} />
+        {/* Aperçu recto/verso CR80 — ratio 85.6/54 ≈ 1.585 */}
+        <div ref={ref} className="grid gap-8 md:grid-cols-2">
+          {/* ---------- RECTO ---------- */}
+          <div className="space-y-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recto</div>
+            <div
+              className="relative aspect-[1.585/1] w-full overflow-hidden rounded-2xl text-white shadow-2xl ring-1 ring-black/5"
+              style={{
+                background:
+                  "linear-gradient(135deg,#0e2f6b 0%,#1e5ba8 45%,#2580c4 75%,#2baa8a 100%)",
+              }}
+            >
+              {/* Décor logo en filigrane */}
+              <img
+                src={logo}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 opacity-[0.08]"
+              />
+              {/* Pastilles colorées (rappel logo) */}
+              <div className="pointer-events-none absolute right-3 top-3 flex gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#1e5ba8] ring-1 ring-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2baa8a] ring-1 ring-white/40" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#7cb342] ring-1 ring-white/40" />
+              </div>
 
-              <div className="relative">
-                {/* Header */}
-                <div className="flex items-start justify-between border-b-4 border-primary pb-4">
-                  <img src={logo} alt="MUGEC-CI" className="h-20 w-auto" />
-                  <div className="text-right text-xs">
-                    <div className="font-semibold">RÉPUBLIQUE DE CÔTE D'IVOIRE</div>
-                    <div>Union – Discipline – Travail</div>
-                    <div className="mt-2 font-bold text-primary">FICHE MEMBRE N° {m.matricule ?? "—"}</div>
+              {/* Bandeau haut */}
+              <div className="flex items-center gap-3 border-b border-white/15 bg-white/5 px-4 py-2.5 backdrop-blur-sm">
+                <div className="grid h-9 w-9 place-items-center rounded-md bg-white p-1 shadow">
+                  <img src={logo} alt="MUGEC-CI" className="h-full w-full object-contain" />
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-white/90">
+                    MUGEC-CI
+                  </div>
+                  <div className="truncate text-[9px] text-white/70">
+                    Mutuelle Générale du Personnel des Collectivités Territoriales
                   </div>
                 </div>
+                <div className="ml-auto rounded-sm bg-white/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
+                  Carte officielle
+                </div>
+              </div>
 
-                <h2 className="mt-6 text-center text-xl font-bold uppercase tracking-wide text-primary">
-                  Mutuelle Générale du Personnel des Collectivités Territoriales
-                </h2>
-
-                <div className="mt-8 grid grid-cols-3 gap-6">
-                  {/* Photo */}
-                  <div className="col-span-1">
-                    <div className="flex h-44 w-36 items-center justify-center rounded border-2 border-dashed text-xs text-muted-foreground">
-                      Photo
+              {/* Corps */}
+              <div className="grid grid-cols-[88px_1fr] gap-3 px-4 py-3">
+                {/* Photo */}
+                <div className="relative h-[108px] w-[88px] overflow-hidden rounded-md bg-white/95 ring-2 ring-white/70 shadow-inner">
+                  {m.photo_url ? (
+                    <img src={m.photo_url} alt={m.prenoms ?? "membre"} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] font-medium text-slate-400">
+                      PHOTO
                     </div>
-                    {qr && <img src={qr} alt="QR" className="mt-4 h-28 w-28" />}
-                  </div>
-
-                  {/* Infos */}
-                  <div className="col-span-2 space-y-2 text-sm">
-                    <Info label="Nom" v={m.nom} />
-                    <Info label="Prénoms" v={m.prenoms} />
-                    <Info label="Date & lieu de naissance" v={`${m.date_naissance ?? "—"} à ${m.lieu_naissance ?? "—"}`} />
-                    <Info label="N° CNI" v={m.cni} />
-                    <Info label="Téléphone" v={m.telephone} />
-                    <Info label="E-mail" v={m.email} />
-                    <Info label="Collectivité" v={m.collectivite} />
-                    <Info label="Région" v={m.region} />
-                    <Info label="Fonction" v={m.fonction} />
-                    <Info label="Matricule mutuelle" v={m.matricule} />
-                  </div>
+                  )}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-3"
+                    style={{ background: "linear-gradient(90deg,#1e5ba8,#2baa8a,#7cb342)" }}
+                  />
                 </div>
 
-                {/* Signatures */}
-                <div className="mt-12 grid grid-cols-2 gap-12 text-xs">
-                  <div className="border-t pt-2 text-center">Signature du membre</div>
-                  <div className="border-t pt-2 text-center">Cachet & signature MUGEC-CI</div>
+                {/* Infos */}
+                <div className="min-w-0 space-y-1">
+                  <CardField label="Nom & prénoms" value={`${m.nom ?? ""} ${m.prenoms ?? ""}`.trim() || "—"} bold />
+                  <div className="grid grid-cols-2 gap-2">
+                    <CardField label="Matricule" value={m.matricule ?? "—"} mono />
+                    <CardField label="Type" value={(m.type_membre ?? "office").toUpperCase()} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <CardField label="Statut" value={(m.statut ?? "actif").toUpperCase()} />
+                    <CardField
+                      label="Inscrit le"
+                      value={m.date_inscription ? new Date(m.date_inscription).toLocaleDateString("fr-FR") : "—"}
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div className="mt-10 text-center text-[10px] text-muted-foreground">
-                  Document généré électroniquement par la plateforme MUGEC-CI — Valable avec QR Code vérifiable.
+              {/* Footer collectivité + QR */}
+              <div className="absolute inset-x-0 bottom-0 flex items-center gap-3 border-t border-white/15 bg-black/25 px-4 py-2 backdrop-blur-sm">
+                <div className="min-w-0">
+                  <div className="text-[8px] uppercase tracking-wider text-white/70">Collectivité</div>
+                  <div className="truncate text-[12px] font-semibold">{m.collectivite ?? "—"}</div>
+                </div>
+                <div className="ml-auto h-12 w-12 shrink-0 overflow-hidden rounded bg-white p-0.5 shadow">
+                  {qr ? <img src={qr} alt="QR" className="h-full w-full object-contain" /> : null}
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* ---------- VERSO ---------- */}
+          <div className="space-y-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Verso</div>
+            <div
+              className="relative aspect-[1.585/1] w-full overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/5"
+              style={{
+                background:
+                  "linear-gradient(160deg,#ffffff 0%,#f1f6ff 55%,#e4f3ee 100%)",
+              }}
+            >
+              {/* Bande latérale couleurs */}
+              <div
+                className="absolute inset-y-0 left-0 w-2"
+                style={{ background: "linear-gradient(180deg,#1e5ba8,#2baa8a,#7cb342)" }}
+              />
+              {/* Logo filigrane centré */}
+              <img
+                src={logo}
+                alt=""
+                aria-hidden
+                className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 opacity-[0.05]"
+              />
+
+              <div className="relative flex h-full flex-col px-5 py-3 text-slate-800">
+                <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <img src={logo} alt="" className="h-7 w-7 object-contain" />
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1e5ba8]">
+                    MUGEC-CI
+                  </div>
+                  <div className="ml-auto text-[9px] font-medium uppercase tracking-wider text-slate-500">
+                    République de Côte d'Ivoire
+                  </div>
+                </div>
+
+                <div className="mt-2 space-y-1.5 text-[10px] leading-snug text-slate-700">
+                  <p>
+                    Cette carte est <strong>strictement personnelle</strong> et demeure la propriété de la
+                    MUGEC-CI. En cas de perte, prévenir immédiatement la mutuelle.
+                  </p>
+                  <p>
+                    À retourner à la MUGEC-CI en cas de cessation de qualité de membre. Toute utilisation
+                    frauduleuse expose son auteur à des poursuites.
+                  </p>
+                </div>
+
+                <div className="mt-auto grid grid-cols-[1fr_auto] items-end gap-3 border-t border-slate-200 pt-2">
+                  <div className="space-y-0.5 text-[9.5px] text-slate-600">
+                    <div>
+                      <span className="font-semibold text-[#1e5ba8]">Tél :</span> 07 58 89 43 63 / 07 08 27 67 51
+                    </div>
+                    <div>
+                      <span className="font-semibold text-[#1e5ba8]">Web :</span> mugec-ci.ivoireprojet.com
+                    </div>
+                    <div className="font-mono text-[#1e5ba8]">
+                      Matricule : {m.matricule ?? "—"}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="mb-1 h-9 w-24 rounded border border-dashed border-slate-300" />
+                    <div className="text-[8px] uppercase tracking-wider text-slate-500">
+                      Cachet & signature
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Légende */}
+        <Card className="border-dashed">
+          <CardContent className="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "#1e5ba8" }} /> Bleu MUGEC
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "#2baa8a" }} /> Teal
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "#7cb342" }} /> Vert
+            </span>
+            <span className="ml-auto">CR80 · 85,6 × 54 mm · 300 dpi · QR vérifiable</span>
           </CardContent>
         </Card>
       </section>
+    </MembreLayout>
+  );
+}
+
+function CardField({
+  label,
+  value,
+  bold,
+  mono,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+  mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[8px] font-semibold uppercase tracking-[0.14em] text-white/70">
+        {label}
+      </div>
+      <div
+        className={`truncate text-[12px] leading-tight ${bold ? "font-bold" : "font-medium"} ${
+          mono ? "font-mono" : ""
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-function Info({ label, v }: { label: string; v?: string }) {
-  return (
-    <div className="flex gap-2 border-b border-dotted pb-1">
-      <span className="w-56 font-semibold text-primary">{label} :</span>
-      <span>{v ?? "—"}</span>
-    </div>
-  );
-}
+

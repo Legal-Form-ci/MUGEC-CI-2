@@ -97,6 +97,13 @@
   --sidebar-accent-foreground: oklch(0.2 0.04 250);
   --sidebar-border: oklch(0.92 0.01 240);
   --sidebar-ring: oklch(0.46 0.14 254);
+
+  /* Premium gradients & shadows for the member dashboard */
+  --gradient-primary: linear-gradient(135deg, oklch(0.46 0.14 254), oklch(0.55 0.13 220));
+  --gradient-accent: linear-gradient(135deg, oklch(0.7 0.12 180), oklch(0.75 0.14 200));
+  --gradient-surface: linear-gradient(180deg, oklch(0.99 0.005 240), oklch(0.97 0.012 240));
+  --shadow-elegant: 0 10px 30px -12px color-mix(in oklab, oklch(0.46 0.14 254) 25%, transparent);
+  --shadow-soft: 0 4px 16px -6px color-mix(in oklab, oklch(0.2 0.04 250) 12%, transparent);
 }
 
 

@@ -3,11 +3,16 @@ import logo from "@/assets/mugec-logo.png";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Home, Menu } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { LogOut, Home, Menu, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-type NavItem = { to: string; label: string };
+export type NavChild = { to: string; label: string };
+export type NavItem = { to?: string; label: string; children?: NavChild[] };
 
 export function DashboardHeader({
   title,
@@ -19,8 +24,11 @@ export function DashboardHeader({
   const { user, signOut } = useAuth();
   const loc = useLocation();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [me, setMe] = useState<{ photo_url: string | null; nom: string | null; prenoms: string | null } | null>(null);
 
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setOpen(false); }, [loc.pathname]);
   useEffect(() => {
     let active = true;
     if (!user) { setMe(null); return; }
@@ -33,10 +41,16 @@ export function DashboardHeader({
     return () => { active = false; };
   }, [user?.id]);
 
-  const initials = ((me?.prenoms?.[0] ?? user?.email?.[0] ?? "?") + (me?.nom?.[0] ?? "")).toUpperCase();
+  const initials = mounted
+    ? ((me?.prenoms?.[0] ?? user?.email?.[0] ?? "?") + (me?.nom?.[0] ?? "")).toUpperCase()
+    : "";
+
+  const isActive = (to?: string) => to ? loc.pathname === to : false;
+  const groupActive = (item: NavItem) =>
+    isActive(item.to) || (item.children?.some((c) => loc.pathname === c.to) ?? false);
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
       <div className="container mx-auto flex h-20 max-w-7xl items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-3 min-w-0">
           <img src={logo} alt="MUGEC-CI" className="h-14 w-auto" />
@@ -47,11 +61,39 @@ export function DashboardHeader({
         </div>
         <nav className="hidden md:flex items-center gap-1">
           {nav.map((n) => {
-            const active = loc.pathname === n.to;
+            if (n.children?.length) {
+              const active = groupActive(n);
+              return (
+                <DropdownMenu key={n.label}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant={active ? "default" : "ghost"}
+                      size="sm"
+                      className="gap-1"
+                    >
+                      {n.label}
+                      <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    <DropdownMenuLabel>{n.label}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {n.children.map((c) => (
+                      <DropdownMenuItem key={c.to} asChild>
+                        <Link to={c.to} className={loc.pathname === c.to ? "font-semibold text-primary" : ""}>
+                          {c.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+            const active = isActive(n.to);
             return (
               <Link
                 key={n.to}
-                to={n.to}
+                to={n.to!}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition ${
                   active
                     ? "bg-primary text-primary-foreground"
@@ -65,7 +107,7 @@ export function DashboardHeader({
         </nav>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
-            <Link to="/"><Home className="mr-2 h-4 w-4" /> Retour au site public</Link>
+            <Link to="/"><Home className="mr-2 h-4 w-4" /> Site public</Link>
           </Button>
           <Avatar className="h-9 w-9 border">
             {me?.photo_url ? <AvatarImage src={me.photo_url} alt="Photo" /> : null}
@@ -82,16 +124,32 @@ export function DashboardHeader({
       {open && (
         <div className="md:hidden border-t bg-background">
           <div className="container mx-auto max-w-7xl px-4 py-2 flex flex-col">
-            {nav.map((n) => (
-              <Link
-                key={n.to}
-                to={n.to}
-                onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2 text-sm hover:bg-secondary"
-              >
-                {n.label}
-              </Link>
-            ))}
+            {nav.map((n) =>
+              n.children?.length ? (
+                <div key={n.label} className="py-1">
+                  <div className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{n.label}</div>
+                  {n.children.map((c) => (
+                    <Link
+                      key={c.to}
+                      to={c.to}
+                      onClick={() => setOpen(false)}
+                      className={`rounded-md px-4 py-2 text-sm hover:bg-secondary ${loc.pathname === c.to ? "text-primary font-medium" : ""}`}
+                    >
+                      • {c.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <Link
+                  key={n.to}
+                  to={n.to!}
+                  onClick={() => setOpen(false)}
+                  className="rounded-md px-3 py-2 text-sm hover:bg-secondary"
+                >
+                  {n.label}
+                </Link>
+              ),
+            )}
             <Link to="/" className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary">
               ← Retour au site public
             </Link>
@@ -112,4 +170,14 @@ export const MEMBRE_NAV: NavItem[] = [
 
 export const ADMIN_NAV: NavItem[] = [
   { to: "/admin", label: "Tableau de bord" },
+  {
+    label: "Gestion",
+    children: [
+      { to: "/admin/membres", label: "Membres" },
+      { to: "/admin/cotisations", label: "Cotisations" },
+      { to: "/admin/prestations", label: "Prestations" },
+      { to: "/admin/notifications", label: "Notifications" },
+    ],
+  },
+  { to: "/admin/miprojet", label: "MiProjet" },
 ];

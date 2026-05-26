@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ScannerRouteImport } from './routes/scanner'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OpportunitesRouteImport } from './routes/opportunites'
 import { Route as LoginRouteImport } from './routes/login'
@@ -20,12 +21,23 @@ import { Route as ActualitesRouteImport } from './routes/actualites'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MembreIndexRouteImport } from './routes/membre/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as VerifierMatriculeRouteImport } from './routes/verifier.$matricule'
 import { Route as MembreProfilRouteImport } from './routes/membre/profil'
+import { Route as MembreFicheRouteImport } from './routes/membre/fiche'
 import { Route as MembreDocumentsRouteImport } from './routes/membre/documents'
 import { Route as MembreCotisationsRouteImport } from './routes/membre/cotisations'
 import { Route as MembreCarteRouteImport } from './routes/membre/carte'
+import { Route as AdminPrestationsRouteImport } from './routes/admin/prestations'
+import { Route as AdminNotificationsRouteImport } from './routes/admin/notifications'
 import { Route as AdminMiprojetRouteImport } from './routes/admin/miprojet'
+import { Route as AdminMembresRouteImport } from './routes/admin/membres'
+import { Route as AdminCotisationsRouteImport } from './routes/admin/cotisations'
 
+const ScannerRoute = ScannerRouteImport.update({
+  id: '/scanner',
+  path: '/scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -81,9 +93,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const VerifierMatriculeRoute = VerifierMatriculeRouteImport.update({
+  id: '/verifier/$matricule',
+  path: '/verifier/$matricule',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MembreProfilRoute = MembreProfilRouteImport.update({
   id: '/membre/profil',
   path: '/membre/profil',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreFicheRoute = MembreFicheRouteImport.update({
+  id: '/membre/fiche',
+  path: '/membre/fiche',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembreDocumentsRoute = MembreDocumentsRouteImport.update({
@@ -101,9 +123,29 @@ const MembreCarteRoute = MembreCarteRouteImport.update({
   path: '/membre/carte',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPrestationsRoute = AdminPrestationsRouteImport.update({
+  id: '/admin/prestations',
+  path: '/admin/prestations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/admin/notifications',
+  path: '/admin/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMiprojetRoute = AdminMiprojetRouteImport.update({
   id: '/admin/miprojet',
   path: '/admin/miprojet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMembresRoute = AdminMembresRouteImport.update({
+  id: '/admin/membres',
+  path: '/admin/membres',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCotisationsRoute = AdminCotisationsRouteImport.update({
+  id: '/admin/cotisations',
+  path: '/admin/cotisations',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -117,11 +159,18 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scanner': typeof ScannerRoute
+  '/admin/cotisations': typeof AdminCotisationsRoute
+  '/admin/membres': typeof AdminMembresRoute
   '/admin/miprojet': typeof AdminMiprojetRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/prestations': typeof AdminPrestationsRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/fiche': typeof MembreFicheRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/verifier/$matricule': typeof VerifierMatriculeRoute
   '/admin/': typeof AdminIndexRoute
   '/membre/': typeof MembreIndexRoute
 }
@@ -135,11 +184,18 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scanner': typeof ScannerRoute
+  '/admin/cotisations': typeof AdminCotisationsRoute
+  '/admin/membres': typeof AdminMembresRoute
   '/admin/miprojet': typeof AdminMiprojetRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/prestations': typeof AdminPrestationsRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/fiche': typeof MembreFicheRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/verifier/$matricule': typeof VerifierMatriculeRoute
   '/admin': typeof AdminIndexRoute
   '/membre': typeof MembreIndexRoute
 }
@@ -154,11 +210,18 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/scanner': typeof ScannerRoute
+  '/admin/cotisations': typeof AdminCotisationsRoute
+  '/admin/membres': typeof AdminMembresRoute
   '/admin/miprojet': typeof AdminMiprojetRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/prestations': typeof AdminPrestationsRoute
   '/membre/carte': typeof MembreCarteRoute
   '/membre/cotisations': typeof MembreCotisationsRoute
   '/membre/documents': typeof MembreDocumentsRoute
+  '/membre/fiche': typeof MembreFicheRoute
   '/membre/profil': typeof MembreProfilRoute
+  '/verifier/$matricule': typeof VerifierMatriculeRoute
   '/admin/': typeof AdminIndexRoute
   '/membre/': typeof MembreIndexRoute
 }
@@ -174,11 +237,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/scanner'
+    | '/admin/cotisations'
+    | '/admin/membres'
     | '/admin/miprojet'
+    | '/admin/notifications'
+    | '/admin/prestations'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
+    | '/membre/fiche'
     | '/membre/profil'
+    | '/verifier/$matricule'
     | '/admin/'
     | '/membre/'
   fileRoutesByTo: FileRoutesByTo
@@ -192,11 +262,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/scanner'
+    | '/admin/cotisations'
+    | '/admin/membres'
     | '/admin/miprojet'
+    | '/admin/notifications'
+    | '/admin/prestations'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
+    | '/membre/fiche'
     | '/membre/profil'
+    | '/verifier/$matricule'
     | '/admin'
     | '/membre'
   id:
@@ -210,11 +287,18 @@ export interface FileRouteTypes {
     | '/login'
     | '/opportunites'
     | '/reset-password'
+    | '/scanner'
+    | '/admin/cotisations'
+    | '/admin/membres'
     | '/admin/miprojet'
+    | '/admin/notifications'
+    | '/admin/prestations'
     | '/membre/carte'
     | '/membre/cotisations'
     | '/membre/documents'
+    | '/membre/fiche'
     | '/membre/profil'
+    | '/verifier/$matricule'
     | '/admin/'
     | '/membre/'
   fileRoutesById: FileRoutesById
@@ -229,17 +313,31 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OpportunitesRoute: typeof OpportunitesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ScannerRoute: typeof ScannerRoute
+  AdminCotisationsRoute: typeof AdminCotisationsRoute
+  AdminMembresRoute: typeof AdminMembresRoute
   AdminMiprojetRoute: typeof AdminMiprojetRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminPrestationsRoute: typeof AdminPrestationsRoute
   MembreCarteRoute: typeof MembreCarteRoute
   MembreCotisationsRoute: typeof MembreCotisationsRoute
   MembreDocumentsRoute: typeof MembreDocumentsRoute
+  MembreFicheRoute: typeof MembreFicheRoute
   MembreProfilRoute: typeof MembreProfilRoute
+  VerifierMatriculeRoute: typeof VerifierMatriculeRoute
   AdminIndexRoute: typeof AdminIndexRoute
   MembreIndexRoute: typeof MembreIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/scanner': {
+      id: '/scanner'
+      path: '/scanner'
+      fullPath: '/scanner'
+      preLoaderRoute: typeof ScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -317,11 +415,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/verifier/$matricule': {
+      id: '/verifier/$matricule'
+      path: '/verifier/$matricule'
+      fullPath: '/verifier/$matricule'
+      preLoaderRoute: typeof VerifierMatriculeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/membre/profil': {
       id: '/membre/profil'
       path: '/membre/profil'
       fullPath: '/membre/profil'
       preLoaderRoute: typeof MembreProfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre/fiche': {
+      id: '/membre/fiche'
+      path: '/membre/fiche'
+      fullPath: '/membre/fiche'
+      preLoaderRoute: typeof MembreFicheRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/membre/documents': {
@@ -345,11 +457,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MembreCarteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/prestations': {
+      id: '/admin/prestations'
+      path: '/admin/prestations'
+      fullPath: '/admin/prestations'
+      preLoaderRoute: typeof AdminPrestationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/admin/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/miprojet': {
       id: '/admin/miprojet'
       path: '/admin/miprojet'
       fullPath: '/admin/miprojet'
       preLoaderRoute: typeof AdminMiprojetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/membres': {
+      id: '/admin/membres'
+      path: '/admin/membres'
+      fullPath: '/admin/membres'
+      preLoaderRoute: typeof AdminMembresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/cotisations': {
+      id: '/admin/cotisations'
+      path: '/admin/cotisations'
+      fullPath: '/admin/cotisations'
+      preLoaderRoute: typeof AdminCotisationsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -365,11 +505,18 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OpportunitesRoute: OpportunitesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ScannerRoute: ScannerRoute,
+  AdminCotisationsRoute: AdminCotisationsRoute,
+  AdminMembresRoute: AdminMembresRoute,
   AdminMiprojetRoute: AdminMiprojetRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminPrestationsRoute: AdminPrestationsRoute,
   MembreCarteRoute: MembreCarteRoute,
   MembreCotisationsRoute: MembreCotisationsRoute,
   MembreDocumentsRoute: MembreDocumentsRoute,
+  MembreFicheRoute: MembreFicheRoute,
   MembreProfilRoute: MembreProfilRoute,
+  VerifierMatriculeRoute: VerifierMatriculeRoute,
   AdminIndexRoute: AdminIndexRoute,
   MembreIndexRoute: MembreIndexRoute,
 }

@@ -20,12 +20,11 @@ function Page() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   async function resolveEmail(input: string): Promise<string | null> {
     const v = input.trim();
     if (v.includes("@")) return v;
-    // Résolution 100% côté serveur (n'expose plus aucun identifiant admin
-    // ni domaine d'email interne dans le bundle client).
     const { data, error } = await supabase.rpc("resolve_login_email", { p_identifier: v });
     if (error) return null;
     return typeof data === "string" && data.length > 0 ? data : null;
@@ -33,23 +32,24 @@ function Page() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMsg(null);
     if (!isSupabaseConfigured) {
-      toast.error("Lovable Cloud / Supabase n'est pas encore connecté.");
+      setErrorMsg("Lovable Cloud / Supabase n'est pas encore connecté.");
       return;
     }
     setLoading(true);
     try {
       const email = await resolveEmail(identifier);
       if (!email) {
-        toast.error("Identifiant inconnu.");
+        setErrorMsg("Identifiant ou mot de passe incorrect, veuillez réessayer.");
         return;
       }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        toast.error(error.message);
+        // Toujours afficher un message générique pour ne pas révéler quel champ est faux
+        setErrorMsg("Identifiant ou mot de passe incorrect, veuillez réessayer.");
         return;
       }
-      // Redirection selon rôle via une fonction RPC sécurisée (évite les 403 RLS).
       let target = "/membre";
       try {
         const { data: path } = await supabase.rpc("current_user_dashboard_path");
@@ -74,9 +74,27 @@ function Page() {
             <h1 className="mt-4 text-center text-2xl font-bold">Espace membre</h1>
             <p className="mt-1 text-center text-sm text-muted-foreground">Connectez-vous à votre compte MUGEC-CI</p>
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
+              {errorMsg && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"
+                >
+                  {errorMsg}
+                </div>
+              )}
               <div>
                 <Label htmlFor="identifier">Identifiant (numéro de téléphone ou identifiant admin)</Label>
-                <Input id="identifier" type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="Ex: 0758894363 ou adminmugec" />
+                <Input
+                  id="identifier"
+                  type="text"
+                  required
+                  value={identifier}
+                  onChange={(e) => { setIdentifier(e.target.value); if (errorMsg) setErrorMsg(null); }}
+                  placeholder="Ex: 0758894363 ou adminmugec"
+                  aria-invalid={errorMsg ? true : undefined}
+                  className={errorMsg ? "border-destructive focus-visible:ring-destructive" : undefined}
+                />
               </div>
               <div>
                 <Label htmlFor="password">Mot de passe</Label>
@@ -86,8 +104,9 @@ function Page() {
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
+                    onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }}
+                    className={`pr-10 ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    aria-invalid={errorMsg ? true : undefined}
                   />
                   <button
                     type="button"
@@ -114,3 +133,4 @@ function Page() {
     </div>
   );
 }
+

@@ -307,7 +307,7 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- 16) Création du compte super admin : admin@mugec-ci.ci / @MugecCi2026
+-- 16) Création du compte super admin : admin@mugec-ci.ci / __ROTATE_ME__
 do $$
 declare
   v_uid uuid;
@@ -321,7 +321,7 @@ begin
       created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token
     ) values (
       '00000000-0000-0000-0000-000000000000', v_uid, 'authenticated', 'authenticated',
-      'admin@mugec-ci.ci', crypt('@MugecCi2026', gen_salt('bf')),
+      'admin@mugec-ci.ci', crypt('__ROTATE_ME__', gen_salt('bf')),
       now(), '{"provider":"email","providers":["email"]}'::jsonb,
       '{"full_name":"Super Admin MUGEC-CI"}'::jsonb,
       now(), now(), '', '', '', ''

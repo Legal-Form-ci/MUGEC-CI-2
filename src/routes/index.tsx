@@ -3,7 +3,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight, ShieldCheck, Users, Wallet, Smartphone, FileBadge, Bell } from "lucide-react";
+import { ArrowRight, ShieldCheck, Users, Wallet, Smartphone, FileBadge, Bell, ScanLine } from "lucide-react";
 import logo from "@/assets/mugec-logo.png";
 
 export const Route = createFileRoute("/")({
@@ -63,6 +63,11 @@ function Index() {
               </Button>
               <Button asChild variant="outline" size="lg">
                 <Link to="/login">J'ai déjà un compte</Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link to="/scanner">
+                  <ScanLine className="mr-2 h-4 w-4" /> Scanner un QR Code
+                </Link>
               </Button>
             </div>
           </div>

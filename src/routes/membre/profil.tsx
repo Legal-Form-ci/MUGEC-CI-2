@@ -1,30 +1,39 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { DashboardHeader, MEMBRE_NAV } from "@/components/DashboardHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { MembreLayout } from "@/components/membre/MembreLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { Loader2, Pencil, Upload } from "lucide-react";
+import {
+  Loader2,
+  Pencil,
+  Upload,
+  User,
+  MapPin,
+  Briefcase,
+  Mail,
+  Phone,
+  Save,
+  X,
+  Camera,
+} from "lucide-react";
 
 export const Route = createFileRoute("/membre/profil")({ component: Page });
 
 function Page() {
   const { user, loading } = useAuth();
-  const nav = useNavigate();
   const [m, setM] = useState<any>(null);
   const [fetched, setFetched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [edit, setEdit] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    if (!loading && !user && isSupabaseConfigured) nav({ to: "/login" });
-  }, [loading, user, nav]);
 
   useEffect(() => {
     let active = true;
@@ -40,16 +49,10 @@ function Page() {
       setM(data ?? { user_id: user.id, email: user.email });
       setFetched(true);
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
-
-  if (loading || !user || !fetched) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
 
   async function save() {
     if (!m) return;
@@ -77,72 +80,246 @@ function Page() {
     setUploading(true);
     const path = `${user.id}/photo-${Date.now()}-${f.name}`;
     const up = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
-    if (up.error) { setUploading(false); return toast.error(up.error.message); }
+    if (up.error) {
+      setUploading(false);
+      return toast.error(up.error.message);
+    }
     const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
     const url = pub.publicUrl;
-    const { error } = await supabase.from("members").update({ photo_url: url }).eq("user_id", user.id);
+    const { error } = await supabase
+      .from("members")
+      .update({ photo_url: url })
+      .eq("user_id", user.id);
     setUploading(false);
     if (error) return toast.error(error.message);
     setM({ ...m, photo_url: url });
     toast.success("Photo mise à jour");
   }
 
+  if (loading || !user || !fetched) {
+    return (
+      <MembreLayout title="Mon profil">
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </MembreLayout>
+    );
+  }
+
   const ro = !edit;
+  const initials = ((m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")).toUpperCase() || "M";
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <DashboardHeader title="Membre MUGEC-CI" nav={MEMBRE_NAV} />
-      <section className="container mx-auto max-w-3xl px-4 py-10">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20 border">
-              {m.photo_url ? <AvatarImage src={m.photo_url} /> : null}
-              <AvatarFallback>{(m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")}</AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold">Mon profil</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Matricule : {m.matricule ?? "—"}</p>
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs text-primary hover:underline">
-                <Upload className="h-3 w-3" /> {uploading ? "Envoi…" : "Changer la photo"}
-                <input type="file" accept="image/*" className="hidden" onChange={onPhoto} />
+    <MembreLayout
+      title="Mon profil"
+      subtitle="Gérez vos informations personnelles et professionnelles"
+      actions={
+        ro ? (
+          <Button onClick={() => setEdit(true)} size="sm">
+            <Pencil className="mr-2 h-4 w-4" /> Modifier
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEdit(false)}>
+              <X className="mr-1 h-4 w-4" /> Annuler
+            </Button>
+            <Button size="sm" onClick={save} disabled={saving}>
+              {saving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              Enregistrer
+            </Button>
+          </div>
+        )
+      }
+    >
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Identity card */}
+        <Card className="lg:col-span-1 overflow-hidden border-0 shadow-[var(--shadow-elegant)]">
+          <div className="relative h-24" style={{ background: "var(--gradient-primary)" }} />
+          <CardContent className="-mt-12 p-6 text-center">
+            <div className="relative inline-block">
+              <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
+                {m.photo_url ? <AvatarImage src={m.photo_url} /> : null}
+                <AvatarFallback className="text-xl bg-primary text-primary-foreground">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <label className="absolute -bottom-1 -right-1 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-2 ring-background transition hover:scale-105">
+                {uploading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Camera className="h-3 w-3" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={onPhoto}
+                  disabled={uploading}
+                />
               </label>
             </div>
-          </div>
-          {ro ? (
-            <Button onClick={() => setEdit(true)} variant="outline"><Pencil className="mr-2 h-4 w-4" /> Modifier</Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEdit(false)}>Annuler</Button>
-              <Button onClick={save} disabled={saving}>{saving ? "Enregistrement…" : "Enregistrer"}</Button>
+            <h2 className="mt-3 text-lg font-bold tracking-tight">
+              {m.prenoms} {m.nom}
+            </h2>
+            <p className="text-sm text-muted-foreground">{m.fonction ?? "Membre"}</p>
+            <Badge
+              variant={m.statut === "actif" ? "default" : "secondary"}
+              className="mt-3 capitalize"
+            >
+              {m.statut ?? "en attente"}
+            </Badge>
+            <Separator className="my-4" />
+            <div className="space-y-2 text-left text-sm">
+              <InfoRow icon={Mail} value={m.email ?? "—"} />
+              <InfoRow icon={Phone} value={m.telephone ?? "—"} />
+              <InfoRow icon={MapPin} value={m.collectivite ?? m.region ?? "—"} />
+              <InfoRow
+                icon={Briefcase}
+                value={<span className="font-mono text-xs">{m.matricule ?? "—"}</span>}
+              />
             </div>
-          )}
-        </div>
-        <Card className="mt-6">
-          <CardContent className="grid gap-4 p-6 md:grid-cols-2">
-            <F label="Nom" v={m.nom} disabled />
-            <F label="Prénoms" v={m.prenoms} disabled />
-            <F label="Email" v={m.email} disabled />
-            <F label="Téléphone" v={m.telephone} disabled={ro} on={(v) => setM({ ...m, telephone: v })} />
-            <F label="Collectivité" v={m.collectivite} disabled={ro} on={(v) => setM({ ...m, collectivite: v })} />
-            <F label="Région" v={m.region} disabled={ro} on={(v) => setM({ ...m, region: v })} />
-            <F label="Direction / Service" v={m.direction} disabled={ro} on={(v) => setM({ ...m, direction: v })} />
-            <F label="Fonction" v={m.fonction} disabled={ro} on={(v) => setM({ ...m, fonction: v })} />
-            <div className="md:col-span-2">
-              <Label>Adresse</Label>
-              <Input value={m.adresse ?? ""} disabled={ro} onChange={(e) => setM({ ...m, adresse: e.target.value })} />
-            </div>
+            <label className="mt-4 inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed py-2 text-xs text-muted-foreground transition hover:border-primary hover:text-primary">
+              <Upload className="h-3 w-3" />
+              {uploading ? "Envoi en cours…" : "Changer la photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onPhoto}
+                disabled={uploading}
+              />
+            </label>
           </CardContent>
         </Card>
-      </section>
+
+        {/* Form */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="shadow-[var(--shadow-soft)]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <User className="h-4 w-4 text-primary" />
+                Identité
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <Field label="Nom" v={m.nom} disabled />
+              <Field label="Prénoms" v={m.prenoms} disabled />
+              <Field label="Email" v={m.email} disabled />
+              <Field
+                label="Téléphone"
+                v={m.telephone}
+                disabled={ro}
+                on={(v) => setM({ ...m, telephone: v })}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-[var(--shadow-soft)]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Briefcase className="h-4 w-4 text-primary" />
+                Vie professionnelle
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 md:grid-cols-2">
+              <Field
+                label="Collectivité"
+                v={m.collectivite}
+                disabled={ro}
+                on={(v) => setM({ ...m, collectivite: v })}
+              />
+              <Field
+                label="Région"
+                v={m.region}
+                disabled={ro}
+                on={(v) => setM({ ...m, region: v })}
+              />
+              <Field
+                label="Direction / Service"
+                v={m.direction}
+                disabled={ro}
+                on={(v) => setM({ ...m, direction: v })}
+              />
+              <Field
+                label="Fonction"
+                v={m.fonction}
+                disabled={ro}
+                on={(v) => setM({ ...m, fonction: v })}
+              />
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-[var(--shadow-soft)]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <MapPin className="h-4 w-4 text-primary" />
+                Adresse postale
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label
+                  htmlFor="adresse"
+                  className="text-xs uppercase tracking-wider text-muted-foreground"
+                >
+                  Adresse complète
+                </Label>
+                <Input
+                  id="adresse"
+                  value={m.adresse ?? ""}
+                  disabled={ro}
+                  onChange={(e) => setM({ ...m, adresse: e.target.value })}
+                  className="h-11"
+                  placeholder="Quartier, ville…"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </MembreLayout>
+  );
+}
+
+function Field({
+  label,
+  v,
+  on,
+  disabled,
+}: {
+  label: string;
+  v?: string;
+  on?: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
+      <Input
+        value={v ?? ""}
+        disabled={disabled}
+        onChange={(e) => on?.(e.target.value)}
+        className="h-11 transition disabled:bg-muted/40 disabled:opacity-100"
+      />
     </div>
   );
 }
 
-function F({ label, v, on, disabled }: { label: string; v?: string; on?: (v: string) => void; disabled?: boolean }) {
+function InfoRow({
+  icon: Icon,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  value: React.ReactNode;
+}) {
   return (
-    <div>
-      <Label>{label}</Label>
-      <Input value={v ?? ""} disabled={disabled} onChange={(e) => on?.(e.target.value)} />
+    <div className="flex items-center gap-2 text-muted-foreground">
+      <Icon className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate text-foreground">{value}</span>
     </div>
   );
 }

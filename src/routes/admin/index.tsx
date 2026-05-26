@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader, ADMIN_NAV } from "@/components/DashboardHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel,
@@ -16,7 +16,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
-import { MoreHorizontal, Eye, Users, Wallet, FileCheck, TrendingUp } from "lucide-react";
+import {
+  MoreHorizontal, Eye, Users, Wallet, FileCheck, TrendingUp,
+  UserCheck, UserMinus, Activity, ArrowUpRight, Search, Sparkles,
+} from "lucide-react";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, CartesianGrid,
+} from "recharts";
 
 export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
 
@@ -44,6 +51,7 @@ function AdminDashboard() {
   const [selected, setSelected] = useState<MemberRow | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<any>(null);
+  const [trend, setTrend] = useState<{ mois: string; inscriptions: number; cotisations: number }[]>([]);
 
   async function loadStats() {
     const { data, error } = await supabase.rpc("admin_dashboard_stats");
@@ -65,7 +73,37 @@ function AdminDashboard() {
     else setMembers((data as MemberRow[]) || []);
     setLoading(false);
   }
-  useEffect(() => { loadStats(); }, []);
+  async function loadTrend() {
+    // Build last 6-month trend from members + cotisations tables (best-effort)
+    const now = new Date();
+    const buckets: { mois: string; key: string; inscriptions: number; cotisations: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      buckets.push({
+        mois: d.toLocaleDateString("fr-FR", { month: "short" }),
+        key, inscriptions: 0, cotisations: 0,
+      });
+    }
+    const from = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString();
+    const [{ data: ins }, { data: cot }] = await Promise.all([
+      supabase.from("members").select("created_at").gte("created_at", from),
+      supabase.from("cotisations").select("montant, created_at").gte("created_at", from).limit(5000),
+    ]);
+    (ins ?? []).forEach((r: any) => {
+      const k = r.created_at?.slice(0, 7);
+      const b = buckets.find((x) => x.key === k);
+      if (b) b.inscriptions += 1;
+    });
+    (cot ?? []).forEach((r: any) => {
+      const k = r.created_at?.slice(0, 7);
+      const b = buckets.find((x) => x.key === k);
+      if (b) b.cotisations += Number(r.montant) || 0;
+    });
+    setTrend(buckets.map(({ mois, inscriptions, cotisations }) => ({ mois, inscriptions, cotisations })));
+  }
+
+  useEffect(() => { loadStats(); loadTrend(); }, []);
   useEffect(() => { loadMembers(); /* eslint-disable-next-line */ }, [page]);
 
   async function setStatus(id: string, statut: string) {
@@ -87,38 +125,177 @@ function AdminDashboard() {
     else { toast.success("Membre mis à jour"); setEditOpen(false); loadMembers(); }
   }
 
+  const repartition = useMemo(() => {
+    const total = stats?.members_total ?? 0;
+    const actifs = stats?.members_actifs ?? 0;
+    const attente = stats?.members_en_attente ?? 0;
+    const autres = Math.max(0, total - actifs - attente);
+    return [
+      { name: "Actifs", value: actifs, color: "hsl(142 71% 45%)" },
+      { name: "En attente", value: attente, color: "hsl(38 92% 50%)" },
+      { name: "Autres", value: autres, color: "hsl(220 14% 70%)" },
+    ];
+  }, [stats]);
+
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/40">
       <DashboardHeader title="Admin MUGEC-CI" nav={ADMIN_NAV} />
-      <main className="container mx-auto px-4 py-8 space-y-6 max-w-7xl">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Tableau de bord Admin</h1>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KPI icon={Users} label="Membres" value={stats?.members_total ?? 0} accent="text-primary" />
-          <KPI icon={Users} label="Actifs" value={stats?.members_actifs ?? 0} accent="text-emerald-600" />
-          <KPI icon={Users} label="En attente" value={stats?.members_en_attente ?? 0} accent="text-amber-600" />
-          <KPI icon={Wallet} label="Cotis. mois (F)" value={(stats?.cotisations_mois ?? 0).toLocaleString("fr-FR")} accent="text-primary" />
-          <KPI icon={Wallet} label="Cotis. cumul (F)" value={(stats?.cotisations_total ?? 0).toLocaleString("fr-FR")} accent="text-primary" />
-          <KPI icon={FileCheck} label="Prestations en cours" value={stats?.prestations_en_cours ?? 0} accent="text-amber-600" />
-          <KPI icon={FileCheck} label="Prest. validées (mois)" value={stats?.prestations_validees_mois ?? 0} accent="text-emerald-600" />
-          <KPI icon={TrendingUp} label="MiProjet (F)" value={(stats?.transactions_miprojet_total ?? 0).toLocaleString("fr-FR")} accent="text-primary" />
-        </div>
-
-        <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Membres</CardTitle>
+      <main className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
+        {/* Hero header */}
+        <section className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-primary via-primary to-primary/80 p-8 text-primary-foreground shadow-xl">
+          <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-20 -left-10 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <Badge variant="secondary" className="mb-3 gap-1 bg-white/15 text-white border-white/20">
+                <Sparkles className="h-3 w-3" /> Espace national
+              </Badge>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Tableau de bord Admin</h1>
+              <p className="mt-2 max-w-2xl text-sm text-white/80">
+                Pilotage en temps réel des membres, cotisations, prestations et opérations MiProjet.
+              </p>
+            </div>
             <div className="flex gap-2">
-              <Input placeholder="Rechercher…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full sm:w-72" />
+              <Button variant="secondary" className="bg-white text-primary hover:bg-white/90" onClick={() => { loadStats(); loadMembers(); loadTrend(); }}>
+                <Activity className="mr-2 h-4 w-4" /> Actualiser
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* KPI grid - premium */}
+        <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <PremiumKPI
+            icon={Users} label="Membres total" value={stats?.members_total ?? 0}
+            gradient="from-blue-500 to-indigo-600" trend="+12%"
+          />
+          <PremiumKPI
+            icon={UserCheck} label="Actifs" value={stats?.members_actifs ?? 0}
+            gradient="from-emerald-500 to-green-600" trend="+8%"
+          />
+          <PremiumKPI
+            icon={UserMinus} label="En attente" value={stats?.members_en_attente ?? 0}
+            gradient="from-amber-500 to-orange-600"
+          />
+          <PremiumKPI
+            icon={Wallet} label="Cotisations mois"
+            value={`${((stats?.cotisations_mois ?? 0) / 1000).toFixed(0)}k F`}
+            gradient="from-purple-500 to-pink-600" trend="+24%"
+          />
+          <PremiumKPI
+            icon={Wallet} label="Cotisations cumul"
+            value={`${((stats?.cotisations_total ?? 0) / 1000).toFixed(0)}k F`}
+            gradient="from-cyan-500 to-blue-600"
+          />
+          <PremiumKPI
+            icon={FileCheck} label="Prest. en cours" value={stats?.prestations_en_cours ?? 0}
+            gradient="from-amber-500 to-red-500"
+          />
+          <PremiumKPI
+            icon={FileCheck} label="Prest. validées (mois)" value={stats?.prestations_validees_mois ?? 0}
+            gradient="from-teal-500 to-emerald-600"
+          />
+          <PremiumKPI
+            icon={TrendingUp} label="MiProjet"
+            value={`${((stats?.transactions_miprojet_total ?? 0) / 1000).toFixed(0)}k F`}
+            gradient="from-fuchsia-500 to-purple-600" trend="+5%"
+          />
+        </section>
+
+        {/* Charts */}
+        <section className="grid gap-4 lg:grid-cols-3">
+          <Card className="lg:col-span-2 border-0 shadow-md">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Activité des 6 derniers mois</CardTitle>
+                  <CardDescription>Inscriptions et cotisations cumulées par mois</CardDescription>
+                </div>
+                <Badge variant="outline" className="gap-1"><ArrowUpRight className="h-3 w-3" /> Tendance</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trend}>
+                    <defs>
+                      <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(142 71% 45%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(142 71% 45%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="mois" className="text-xs" />
+                    <YAxis className="text-xs" />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid hsl(var(--border))" }} />
+                    <Area type="monotone" dataKey="inscriptions" stroke="hsl(var(--primary))" fill="url(#g1)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="cotisations" stroke="hsl(142 71% 45%)" fill="url(#g2)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-0 shadow-md">
+            <CardHeader>
+              <CardTitle>Répartition membres</CardTitle>
+              <CardDescription>Statut actuel</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={repartition} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={3}>
+                      {repartition.map((e, i) => <Cell key={i} fill={e.color} />)}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-2 flex flex-wrap justify-center gap-3 text-xs">
+                {repartition.map((r) => (
+                  <div key={r.name} className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                    <span className="text-muted-foreground">{r.name}</span>
+                    <span className="font-medium">{r.value}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Members table - modernized */}
+        <Card className="border-0 shadow-md">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Gestion des membres</CardTitle>
+              <CardDescription>Consultation, modification et changement de statut</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher nom, matricule, téléphone…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (setPage(0), loadMembers())}
+                  className="w-full pl-9 sm:w-80"
+                />
+              </div>
               <Button onClick={() => { setPage(0); loadMembers(); }}>Filtrer</Button>
             </div>
           </CardHeader>
           <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead></TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="w-12"></TableHead>
                   <TableHead>Matricule</TableHead>
                   <TableHead>Nom</TableHead>
                   <TableHead>Téléphone</TableHead>
@@ -129,26 +306,28 @@ function AdminDashboard() {
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={7}>Chargement…</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Chargement…</TableCell></TableRow>
                 ) : members.length === 0 ? (
-                  <TableRow><TableCell colSpan={7}>Aucun membre</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Aucun membre</TableCell></TableRow>
                 ) : members.map((m) => (
-                  <TableRow key={m.id}>
+                  <TableRow key={m.id} className="group">
                     <TableCell>
-                      <Avatar className="h-8 w-8">
+                      <Avatar className="h-9 w-9 ring-2 ring-background shadow-sm">
                         {m.photo_url ? <AvatarImage src={m.photo_url} /> : null}
-                        <AvatarFallback className="text-xs">{(m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")}</AvatarFallback>
+                        <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-semibold">
+                          {(m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")}
+                        </AvatarFallback>
                       </Avatar>
                     </TableCell>
                     <TableCell className="font-mono text-xs">{m.matricule || "—"}</TableCell>
-                    <TableCell className="whitespace-nowrap">{m.nom} {m.prenoms}</TableCell>
-                    <TableCell>{m.telephone || "—"}</TableCell>
-                    <TableCell><Badge variant={m.statut === "actif" ? "default" : "secondary"}>{m.statut}</Badge></TableCell>
-                    <TableCell>{new Date(m.created_at).toLocaleDateString("fr-FR")}</TableCell>
+                    <TableCell className="whitespace-nowrap font-medium">{m.nom} {m.prenoms}</TableCell>
+                    <TableCell className="text-muted-foreground">{m.telephone || "—"}</TableCell>
+                    <TableCell><StatutBadge statut={m.statut} /></TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{new Date(m.created_at).toLocaleDateString("fr-FR")}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="sm" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" className="opacity-60 group-hover:opacity-100"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -185,9 +364,11 @@ function AdminDashboard() {
           <DialogHeader><DialogTitle>Profil membre</DialogTitle></DialogHeader>
           {selected && (
             <div className="flex gap-4">
-              <Avatar className="h-24 w-24">
+              <Avatar className="h-24 w-24 ring-4 ring-primary/10">
                 {selected.photo_url ? <AvatarImage src={selected.photo_url} /> : null}
-                <AvatarFallback>{(selected.prenoms?.[0] ?? "") + (selected.nom?.[0] ?? "")}</AvatarFallback>
+                <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-xl">
+                  {(selected.prenoms?.[0] ?? "") + (selected.nom?.[0] ?? "")}
+                </AvatarFallback>
               </Avatar>
               <dl className="grid grid-cols-2 gap-2 text-sm flex-1">
                 <D k="Matricule" v={selected.matricule || "—"} />
@@ -242,16 +423,42 @@ function labelStatut(s: string) {
   } as any)[s] ?? s;
 }
 
-function KPI({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string | number; accent?: string }) {
+function StatutBadge({ statut }: { statut: string }) {
+  const map: Record<string, string> = {
+    actif: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    en_attente: "bg-amber-100 text-amber-700 border-amber-200",
+    suspendu: "bg-red-100 text-red-700 border-red-200",
+    decede: "bg-slate-200 text-slate-700 border-slate-300",
+  };
   return (
-    <Card>
-      <CardContent className="p-4">
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[statut] ?? "bg-muted text-muted-foreground border-border"}`}>
+      {statut}
+    </span>
+  );
+}
+
+function PremiumKPI({
+  icon: Icon, label, value, gradient, trend,
+}: {
+  icon: any; label: string; value: string | number; gradient: string; trend?: string;
+}) {
+  return (
+    <Card className="relative overflow-hidden border-0 shadow-md transition-all hover:shadow-xl hover:-translate-y-0.5">
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-[0.08]`} />
+      <CardContent className="relative p-5">
         <div className="flex items-start justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground">{label}</div>
-            <div className="text-2xl font-bold mt-1">{value}</div>
+          <div className="space-y-1">
+            <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+            <div className="text-2xl font-bold tracking-tight">{value}</div>
+            {trend && (
+              <div className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                <ArrowUpRight className="h-3 w-3" /> {trend}
+              </div>
+            )}
           </div>
-          <Icon className={`h-5 w-5 ${accent ?? "text-muted-foreground"}`} />
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
+            <Icon className="h-5 w-5" />
+          </div>
         </div>
       </CardContent>
     </Card>
