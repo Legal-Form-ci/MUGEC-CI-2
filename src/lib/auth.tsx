@@ -38,6 +38,13 @@ function readStoredSession(): Session | null {
 
 const AuthCtx = createContext<Ctx>({ user: null, session: null, loading: false, signOut: async () => {} });
 
+export const ADMIN_ROLES = [
+  "super_admin", "admin_national", "admin_regional", "admin_local", "agent_saisie",
+  "president", "secretaire_general", "tresorier_national", "commissaire_comptes",
+  "directeur_executif", "comite_controle", "conseil_sages", "secretaire_regional",
+  "tresorier_regional", "delegue_section"
+];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => readStoredSession());
   const [loading, setLoading] = useState(false);
