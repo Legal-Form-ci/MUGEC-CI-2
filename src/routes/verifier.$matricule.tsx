@@ -1,3 +1,4 @@
+import { MemberAvatarImg } from "@/components/MemberAvatar";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -83,13 +84,17 @@ function Page() {
             <CardContent className="p-6">
               <div className="flex items-start gap-5">
                 <div className="h-28 w-24 shrink-0 overflow-hidden rounded-lg border bg-muted">
-                  {info.photo_url ? (
-                    <img src={info.photo_url} alt={`${info.prenoms} ${info.nom}`} className="h-full w-full object-cover" />
-                  ) : (
+                  <MemberAvatarImg
+                    src={info.photo_url}
+                    alt={`${info.prenoms} ${info.nom}`}
+                    className="h-full w-full object-cover"
+                  />
+                  {!info.photo_url && (
                     <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                       <UserCircle2 className="h-10 w-10" />
                     </div>
                   )}
+
                 </div>
                 <div className="min-w-0 flex-1">
                   <h1 className="truncate text-xl font-bold">{`${info.prenoms ?? ""} ${info.nom ?? ""}`.trim() || "—"}</h1>

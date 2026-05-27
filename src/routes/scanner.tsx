@@ -53,7 +53,7 @@ function Page() {
       await html5.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 240, height: 240 } },
-        (decoded) => {
+        (decoded: string) => {
           const id = parseMatricule(decoded);
           if (id) {
             html5.stop().then(() => nav({ to: "/verifier/$matricule", params: { matricule: id } }));

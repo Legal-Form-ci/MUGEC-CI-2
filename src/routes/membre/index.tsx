@@ -1,3 +1,4 @@
+import { MemberAvatarImage } from "@/components/MemberAvatar";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { MembreLayout } from "@/components/membre/MembreLayout";
@@ -148,7 +149,7 @@ function Page() {
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex items-end gap-4">
               <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
-                {m.photo_url ? <AvatarImage src={m.photo_url} alt={`${m.prenoms} ${m.nom}`} /> : null}
+                <MemberAvatarImage src={m.photo_url} alt={`${m.prenoms} ${m.nom}`} />
                 <AvatarFallback className="text-xl bg-primary text-primary-foreground">
                   {initials}
                 </AvatarFallback>

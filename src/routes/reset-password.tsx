@@ -22,7 +22,10 @@ function Page() {
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password: pwd });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      console.error("reset password failed", error);
+      return toast.error("Impossible de mettre à jour le mot de passe. Veuillez réessayer.");
+    }
     toast.success("Mot de passe mis à jour");
     nav({ to: "/membre" });
   }

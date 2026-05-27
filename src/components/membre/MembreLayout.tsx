@@ -1,3 +1,4 @@
+import { MemberAvatarImage } from "@/components/MemberAvatar";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 import {
@@ -35,8 +36,6 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 const NAV_ITEMS = [
   { to: "/membre", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/membre/profil", label: "Mon profil", icon: User },
-  { to: "/membre/carte", label: "Ma carte", icon: CreditCard },
-  { to: "/membre/fiche", label: "Fiche d'adhésion", icon: FileText },
   { to: "/membre/documents", label: "Documents", icon: FileText },
   { to: "/membre/cotisations", label: "Cotisations", icon: Wallet },
 ] as const;
@@ -117,31 +116,20 @@ function MemberSidebar({ me }: { me: MemberSummary | null }) {
       <SidebarFooter className="border-t p-2">
         <div className={`flex items-center gap-2 rounded-lg p-2 ${collapsed ? "justify-center" : "bg-sidebar-accent/40"}`}>
           <Avatar className="h-9 w-9 ring-2 ring-background">
-            {me?.photo_url ? <AvatarImage src={me.photo_url} alt="" /> : null}
+            <MemberAvatarImage src={me?.photo_url} alt="" />
             <AvatarFallback className="text-xs bg-primary text-primary-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium truncate">
+              <div className="text-xs uppercase tracking-wider text-muted-foreground">
+                Bonjour
+              </div>
+              <div className="text-sm font-semibold truncate">
                 {me?.prenoms ?? ""} {me?.nom ?? ""}
               </div>
-              <div className="text-[11px] text-muted-foreground truncate font-mono">
-                {me?.matricule ?? user?.email ?? "—"}
-              </div>
             </div>
-          )}
-          {!collapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => signOut()}
-              title="Déconnexion"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
           )}
         </div>
       </SidebarFooter>
@@ -160,7 +148,7 @@ export function MembreLayout({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const nav = useNavigate();
   const [me, setMe] = useState<MemberSummary | null>(null);
 
@@ -225,6 +213,16 @@ export function MembreLayout({
                     {me.statut}
                   </Badge>
                 )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => signOut()}
+                  title="Déconnexion"
+                  className="gap-2"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline">Déconnexion</span>
+                </Button>
               </div>
             </div>
           </header>

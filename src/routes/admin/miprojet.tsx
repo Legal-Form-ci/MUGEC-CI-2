@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { DashboardHeader, ADMIN_NAV } from "@/components/DashboardHeader";
+import { DashboardHeader, MIPROJET_NAV } from "@/components/DashboardHeader";
+import { useNavigate } from "@tanstack/react-router";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,6 +88,8 @@ function fmtFCFA(n: number | undefined | null) {
 }
 
 function MiProjetDashboard() {
+  const navigate = useNavigate();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [tx, setTx] = useState<Tx[]>([]);
   const [allTx, setAllTx] = useState<Tx[]>([]);
@@ -94,7 +97,27 @@ function MiProjetDashboard() {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
+  // Garde d'accès : seul super_admin peut accéder à ce back-office.
   useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate({ to: "/login" }); return; }
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "super_admin")
+        .maybeSingle();
+      if (!active) return;
+      if (!data) { navigate({ to: "/admin" }); return; }
+      setAuthorized(true);
+    })();
+    return () => { active = false; };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (!authorized) return;
     supabase.rpc("miprojet_dashboard_stats").then(({ data }) => {
       if (data) setStats(data as Stats);
     });
@@ -105,7 +128,7 @@ function MiProjetDashboard() {
       .order("created_at", { ascending: false })
       .limit(1000)
       .then(({ data }) => setAllTx((data || []) as Tx[]));
-  }, []);
+  }, [authorized]);
 
   useEffect(() => {
     supabase
@@ -165,9 +188,17 @@ function MiProjetDashboard() {
       ? Math.round(((stats?.transactions_paye ?? 0) / (stats?.transactions_total ?? 1)) * 100)
       : 0;
 
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Vérification des droits…
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ background: "var(--gradient-surface)" }}>
-      <DashboardHeader title="Admin MiProjet" nav={ADMIN_NAV} />
+      <DashboardHeader title="Back-office Super Admin" nav={MIPROJET_NAV} />
       <main className="container mx-auto max-w-7xl space-y-8 px-4 py-8 md:px-6">
         {/* Hero */}
         <div

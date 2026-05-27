@@ -53,8 +53,8 @@ function Page() {
       toast.success("Message envoyé avec succès");
       setForm({ nom: "", email: "", telephone: "", sujet: "", message: "" });
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Erreur lors de l'envoi.";
-      setErr(msg);
+      console.error("contact submit failed", e);
+      setErr("Une erreur s'est produite. Veuillez réessayer plus tard.");
       toast.error("L'envoi a échoué");
     } finally {
       setBusy(false);

@@ -987,6 +987,13 @@ export type Database = {
             foreignKeyName: "transactions_miprojet_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
+            referencedRelation: "finance_revenue_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_miprojet_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
             referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
@@ -1021,7 +1028,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      finance_revenue_summary: {
+        Row: {
+          categorie: string | null
+          created_at: string | null
+          date_operation: string | null
+          id: string | null
+          member_id: string | null
+          montant_total: number | null
+          operateur: string | null
+          part_miprojet: number | null
+          part_mutuelle: number | null
+          periode: string | null
+          reference_transaction: string | null
+          statut_paiement: string | null
+          type: string | null
+        }
+        Insert: {
+          categorie?: never
+          created_at?: string | null
+          date_operation?: never
+          id?: string | null
+          member_id?: string | null
+          montant_total?: number | null
+          operateur?: string | null
+          part_miprojet?: number | null
+          part_mutuelle?: number | null
+          periode?: string | null
+          reference_transaction?: string | null
+          statut_paiement?: string | null
+          type?: string | null
+        }
+        Update: {
+          categorie?: never
+          created_at?: string | null
+          date_operation?: never
+          id?: string | null
+          member_id?: string | null
+          montant_total?: number | null
+          operateur?: string | null
+          part_miprojet?: number | null
+          part_mutuelle?: number | null
+          periode?: string | null
+          reference_transaction?: string | null
+          statut_paiement?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_dashboard_stats: { Args: never; Returns: Json }
@@ -1031,6 +1093,8 @@ export type Database = {
       }
       can_manage_payments: { Args: { _user_id: string }; Returns: boolean }
       current_user_dashboard_path: { Args: never; Returns: string }
+      dashboard_path_for: { Args: { _user_id: string }; Returns: string }
+      dashboard_sync_health: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -203,13 +203,28 @@ function Page() {
         options: { emailRedirectTo: `${window.location.origin}/membre` },
       });
       if (authErr && !/already/i.test(authErr.message)) throw authErr;
-      const { error: signInErr } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email: data.email!,
         password: data.password!,
       });
       if (signInErr) throw signInErr;
 
       const payRef = `${(data.paiement ?? "pay").toUpperCase()}-${Date.now()}`;
+
+      // Upload photo to private avatars bucket, store only the path.
+      let photoPath: string | null = null;
+      const userId = signInData.user?.id;
+      if (data.photoIdentite?.dataUrl && userId) {
+        const res = await fetch(data.photoIdentite.dataUrl);
+        const blob = await res.blob();
+        const ext = (blob.type.split("/")[1] || "jpg").replace(/[^a-z0-9]/gi, "");
+        const path = `${userId}/photo-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("avatars")
+          .upload(path, blob, { contentType: blob.type, upsert: true });
+        if (upErr) throw upErr;
+        photoPath = path;
+      }
 
       await finalize({
         data: {
@@ -229,7 +244,7 @@ function Page() {
           matricule_pro: data.matriculePro || null,
           date_embauche: data.dateEmbauche || null,
           ayants_droit: ayantsText() || null,
-          photo_url: data.photoIdentite?.dataUrl || null,
+          photo_url: photoPath,
           paiement_methode: data.paiement!,
           payment_reference: payRef,
         },
@@ -239,8 +254,8 @@ function Page() {
       toast.success("Inscription validée. Bienvenue !");
       nav({ to: "/membre" });
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Erreur inconnue";
-      toast.error(msg);
+      console.error("inscription submit failed", e);
+      toast.error("Échec de l'inscription. Veuillez réessayer.");
     } finally {
       setSubmitting(false);
     }

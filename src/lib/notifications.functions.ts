@@ -166,7 +166,10 @@ export const dispatchNotification = createServerFn({ method: "POST" })
       .select("*")
       .eq("event", event)
       .eq("active", true);
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("dispatchNotification: template query failed", error);
+      throw new Error("Erreur lors de l'envoi de la notification.");
+    }
 
     const results: Array<{ channel: Channel; ok: boolean; error?: string }> = [];
 

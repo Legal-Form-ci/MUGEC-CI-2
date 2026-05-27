@@ -1,3 +1,4 @@
+import { MemberAvatarImage } from "@/components/MemberAvatar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader, ADMIN_NAV } from "@/components/DashboardHeader";
@@ -17,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import {
-  MoreHorizontal, Eye, Users, Wallet, FileCheck, TrendingUp,
+  MoreHorizontal, Eye, Users, Wallet, FileCheck,
   UserCheck, UserMinus, Activity, ArrowUpRight, Search, Sparkles,
 } from "lucide-react";
 import {
@@ -29,9 +30,12 @@ export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
 
 type Stats = {
   members_total: number; members_actifs: number; members_en_attente: number;
-  cotisations_mois: number; cotisations_total: number;
+  members_suspendus?: number;
+  cotisations_mois: number; cotisations_total: number; cotisations_attente?: number;
+  droits_adhesion_mois?: number; droits_adhesion_total?: number;
+  revenus_mois?: number; revenus_total?: number;
   prestations_en_cours: number; prestations_validees_mois: number;
-  transactions_miprojet_total: number;
+  prestations_rejetees_mois?: number;
 };
 type MemberRow = {
   id: string; matricule: string | null; nom: string; prenoms: string;
@@ -153,7 +157,7 @@ function AdminDashboard() {
               </Badge>
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Tableau de bord Admin</h1>
               <p className="mt-2 max-w-2xl text-sm text-white/80">
-                Pilotage en temps réel des membres, cotisations, prestations et opérations MiProjet.
+                Pilotage en temps réel des membres, cotisations et prestations de la mutuelle.
               </p>
             </div>
             <div className="flex gap-2">
@@ -197,11 +201,52 @@ function AdminDashboard() {
             gradient="from-teal-500 to-emerald-600"
           />
           <PremiumKPI
-            icon={TrendingUp} label="MiProjet"
-            value={`${((stats?.transactions_miprojet_total ?? 0) / 1000).toFixed(0)}k F`}
-            gradient="from-fuchsia-500 to-purple-600" trend="+5%"
+            icon={FileCheck} label="Prest. rejetées (mois)" value={stats?.prestations_rejetees_mois ?? 0}
+            gradient="from-rose-500 to-red-600"
           />
         </section>
+
+        {/* Finances séparées : droits d'adhésion / cotisations / revenus globaux */}
+        <section className="grid gap-4 md:grid-cols-3">
+          <Card className="border-0 shadow-md overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 to-orange-600" />
+            <CardHeader className="pb-2">
+              <CardDescription>Droits d'adhésion</CardDescription>
+              <CardTitle className="text-2xl tabular-nums">
+                {((stats?.droits_adhesion_total ?? 0) / 1000).toFixed(0)} k F
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground">
+              Ce mois&nbsp;: <span className="font-semibold text-foreground">{((stats?.droits_adhesion_mois ?? 0) / 1000).toFixed(0)} k F</span>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-md overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-purple-500 to-pink-600" />
+            <CardHeader className="pb-2">
+              <CardDescription>Cotisations</CardDescription>
+              <CardTitle className="text-2xl tabular-nums">
+                {((stats?.cotisations_total ?? 0) / 1000).toFixed(0)} k F
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground">
+              Ce mois&nbsp;: <span className="font-semibold text-foreground">{((stats?.cotisations_mois ?? 0) / 1000).toFixed(0)} k F</span>
+            </CardContent>
+          </Card>
+          <Card className="border-0 shadow-md overflow-hidden">
+            <div className="h-1.5 bg-gradient-to-r from-emerald-500 to-teal-600" />
+            <CardHeader className="pb-2">
+              <CardDescription>Revenus globaux</CardDescription>
+              <CardTitle className="text-2xl tabular-nums">
+                {(((stats?.revenus_total ?? ((stats?.droits_adhesion_total ?? 0) + (stats?.cotisations_total ?? 0)))) / 1000).toFixed(0)} k F
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs text-muted-foreground">
+              Ce mois&nbsp;: <span className="font-semibold text-foreground">{(((stats?.revenus_mois ?? ((stats?.droits_adhesion_mois ?? 0) + (stats?.cotisations_mois ?? 0)))) / 1000).toFixed(0)} k F</span>
+            </CardContent>
+          </Card>
+        </section>
+
+
 
         {/* Charts */}
         <section className="grid gap-4 lg:grid-cols-3">
@@ -313,7 +358,7 @@ function AdminDashboard() {
                   <TableRow key={m.id} className="group">
                     <TableCell>
                       <Avatar className="h-9 w-9 ring-2 ring-background shadow-sm">
-                        {m.photo_url ? <AvatarImage src={m.photo_url} /> : null}
+                        <MemberAvatarImage src={m.photo_url} />
                         <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-semibold">
                           {(m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")}
                         </AvatarFallback>
@@ -365,7 +410,7 @@ function AdminDashboard() {
           {selected && (
             <div className="flex gap-4">
               <Avatar className="h-24 w-24 ring-4 ring-primary/10">
-                {selected.photo_url ? <AvatarImage src={selected.photo_url} /> : null}
+                <MemberAvatarImage src={selected.photo_url} />
                 <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-xl">
                   {(selected.prenoms?.[0] ?? "") + (selected.nom?.[0] ?? "")}
                 </AvatarFallback>

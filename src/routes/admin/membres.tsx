@@ -1,3 +1,4 @@
+import { MemberAvatarImage } from "@/components/MemberAvatar";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { DashboardHeader, ADMIN_NAV } from "@/components/DashboardHeader";
@@ -48,20 +49,26 @@ function MembresPage() {
       .range(page * PAGE, page * PAGE + PAGE - 1);
     if (statut !== "all") qb = qb.eq("statut", statut);
     if (q.trim()) {
-      const s = `%${q.trim()}%`;
+      // Escape PostgREST-special characters to prevent filter injection via .or()
+      const safe = q.trim().replace(/[(),*\\]/g, " ").slice(0, 100);
+      const s = `%${safe}%`;
       qb = qb.or(`nom.ilike.${s},prenoms.ilike.${s},telephone.ilike.${s},matricule.ilike.${s},email.ilike.${s}`);
     }
     const { data, error } = await qb;
-    if (error) toast.error(error.message);
-    else setRows((data as Row[]) || []);
+    if (error) {
+      console.error("admin members load failed", error);
+      toast.error("Impossible de charger la liste des membres.");
+    } else setRows((data as Row[]) || []);
     setLoading(false);
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, statut]);
 
   async function setStatus(id: string, s: string) {
     const { error } = await supabase.from("members").update({ statut: s }).eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success(`Statut → ${s}`); load(); }
+    if (error) {
+      console.error("admin members setStatus failed", error);
+      toast.error("Impossible de mettre à jour le statut.");
+    } else { toast.success(`Statut → ${s}`); load(); }
   }
 
   return (
@@ -112,7 +119,7 @@ function MembresPage() {
                   <TableRow key={m.id} className="group">
                     <TableCell>
                       <Avatar className="h-9 w-9 ring-2 ring-background shadow-sm">
-                        {m.photo_url ? <AvatarImage src={m.photo_url}/> : null}
+                        <MemberAvatarImage src={m.photo_url} />
                         <AvatarFallback className="text-xs bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-semibold">
                           {(m.prenoms?.[0] ?? "") + (m.nom?.[0] ?? "")}
                         </AvatarFallback>

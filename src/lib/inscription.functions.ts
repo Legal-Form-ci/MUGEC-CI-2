@@ -20,7 +20,13 @@ const memberSchema = z.object({
   matricule_pro: z.string().trim().max(50).optional().nullable(),
   date_embauche: z.string().optional().nullable(),
   ayants_droit: z.string().max(4000).optional().nullable(),
-  photo_url: z.string().max(2_000_000).optional().nullable(),
+  photo_url: z
+    .string()
+    .max(500)
+    .regex(/^[A-Za-z0-9._\-/]+$/, "Chemin photo invalide")
+    .refine((v) => !v.startsWith("data:") && !/^https?:\/\//i.test(v), "Chemin photo invalide")
+    .optional()
+    .nullable(),
   paiement_methode: z.enum(["orange", "mtn", "wave", "moov"]),
   payment_reference: z.string().min(3).max(80),
 });
@@ -74,7 +80,10 @@ export const finalizeRegistration = createServerFn({ method: "POST" })
       })
       .select()
       .single();
-    if (memberErr) throw new Error(memberErr.message);
+    if (memberErr) {
+      console.error("finalizeRegistration: member insert failed", memberErr);
+      throw new Error("Échec de la création du compte. Veuillez réessayer.");
+    }
 
     // 2) Souscription d'inscription — payée
     const { data: sub, error: subErr } = await supabaseAdmin
@@ -92,7 +101,10 @@ export const finalizeRegistration = createServerFn({ method: "POST" })
       })
       .select()
       .single();
-    if (subErr) throw new Error(subErr.message);
+    if (subErr) {
+      console.error("finalizeRegistration: subscription insert failed", subErr);
+      throw new Error("Échec de l'enregistrement du paiement. Veuillez réessayer.");
+    }
 
     // 3) Trace MiPROJET (1 000 FCFA) — confirmé
     await supabaseAdmin.from("transactions_miprojet").insert({

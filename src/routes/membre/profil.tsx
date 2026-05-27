@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MemberAvatarImage } from "@/components/MemberAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
@@ -45,7 +46,7 @@ function Page() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (!active) return;
-      if (error) toast.error(error.message);
+      if (error) { console.error("profil load failed", error); toast.error("Impossible de charger votre profil."); }
       setM(data ?? { user_id: user.id, email: user.email });
       setFetched(true);
     })();
@@ -69,7 +70,7 @@ function Page() {
       })
       .eq("user_id", user!.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) { console.error("profil save failed", error); return toast.error("Impossible d'enregistrer les modifications."); }
     toast.success("Profil mis à jour");
     setEdit(false);
   }
@@ -81,17 +82,18 @@ function Page() {
     const path = `${user.id}/photo-${Date.now()}-${f.name}`;
     const up = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
     if (up.error) {
+      console.error("avatar upload failed", up.error);
       setUploading(false);
-      return toast.error(up.error.message);
+      return toast.error("Impossible d'envoyer la photo. Veuillez réessayer.");
     }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const url = pub.publicUrl;
+    // Store the storage path (bucket is private — signed URLs are generated on render)
+    const url = path;
     const { error } = await supabase
       .from("members")
       .update({ photo_url: url })
       .eq("user_id", user.id);
     setUploading(false);
-    if (error) return toast.error(error.message);
+    if (error) { console.error("avatar update failed", error); return toast.error("Impossible d'enregistrer la photo."); }
     setM({ ...m, photo_url: url });
     toast.success("Photo mise à jour");
   }
@@ -142,7 +144,7 @@ function Page() {
           <CardContent className="-mt-12 p-6 text-center">
             <div className="relative inline-block">
               <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
-                {m.photo_url ? <AvatarImage src={m.photo_url} /> : null}
+                <MemberAvatarImage src={m.photo_url} />
                 <AvatarFallback className="text-xl bg-primary text-primary-foreground">
                   {initials}
                 </AvatarFallback>
