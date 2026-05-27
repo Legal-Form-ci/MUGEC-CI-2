@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScannerRouteImport } from './routes/scanner'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OpportunitesRouteImport } from './routes/opportunites'
+import { Route as MembreRouteImport } from './routes/membre'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InscriptionRouteImport } from './routes/inscription'
 import { Route as ForumRouteImport } from './routes/forum'
@@ -53,6 +54,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const OpportunitesRoute = OpportunitesRouteImport.update({
   id: '/opportunites',
   path: '/opportunites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MembreRoute = MembreRouteImport.update({
+  id: '/membre',
+  path: '/membre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -96,9 +102,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembreIndexRoute = MembreIndexRouteImport.update({
-  id: '/membre/',
-  path: '/membre/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => MembreRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -111,29 +117,29 @@ const VerifierMatriculeRoute = VerifierMatriculeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembreProfilRoute = MembreProfilRouteImport.update({
-  id: '/membre/profil',
-  path: '/membre/profil',
-  getParentRoute: () => rootRouteImport,
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => MembreRoute,
 } as any)
 const MembreFicheRoute = MembreFicheRouteImport.update({
-  id: '/membre/fiche',
-  path: '/membre/fiche',
-  getParentRoute: () => rootRouteImport,
+  id: '/fiche',
+  path: '/fiche',
+  getParentRoute: () => MembreRoute,
 } as any)
 const MembreDocumentsRoute = MembreDocumentsRouteImport.update({
-  id: '/membre/documents',
-  path: '/membre/documents',
-  getParentRoute: () => rootRouteImport,
+  id: '/documents',
+  path: '/documents',
+  getParentRoute: () => MembreRoute,
 } as any)
 const MembreCotisationsRoute = MembreCotisationsRouteImport.update({
-  id: '/membre/cotisations',
-  path: '/membre/cotisations',
-  getParentRoute: () => rootRouteImport,
+  id: '/cotisations',
+  path: '/cotisations',
+  getParentRoute: () => MembreRoute,
 } as any)
 const MembreCarteRoute = MembreCarteRouteImport.update({
-  id: '/membre/carte',
-  path: '/membre/carte',
-  getParentRoute: () => rootRouteImport,
+  id: '/carte',
+  path: '/carte',
+  getParentRoute: () => MembreRoute,
 } as any)
 const AdminPrestationsRoute = AdminPrestationsRouteImport.update({
   id: '/prestations',
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/forum': typeof ForumRoute
   '/inscription': typeof InscriptionRoute
   '/login': typeof LoginRoute
+  '/membre': typeof MembreRouteWithChildren
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scanner': typeof ScannerRoute
@@ -224,6 +231,7 @@ export interface FileRoutesById {
   '/forum': typeof ForumRoute
   '/inscription': typeof InscriptionRoute
   '/login': typeof LoginRoute
+  '/membre': typeof MembreRouteWithChildren
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scanner': typeof ScannerRoute
@@ -253,6 +261,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/inscription'
     | '/login'
+    | '/membre'
     | '/opportunites'
     | '/reset-password'
     | '/scanner'
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/inscription'
     | '/login'
+    | '/membre'
     | '/opportunites'
     | '/reset-password'
     | '/scanner'
@@ -334,17 +344,12 @@ export interface RootRouteChildren {
   ForumRoute: typeof ForumRoute
   InscriptionRoute: typeof InscriptionRoute
   LoginRoute: typeof LoginRoute
+  MembreRoute: typeof MembreRouteWithChildren
   OpportunitesRoute: typeof OpportunitesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ScannerRoute: typeof ScannerRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  MembreCarteRoute: typeof MembreCarteRoute
-  MembreCotisationsRoute: typeof MembreCotisationsRoute
-  MembreDocumentsRoute: typeof MembreDocumentsRoute
-  MembreFicheRoute: typeof MembreFicheRoute
-  MembreProfilRoute: typeof MembreProfilRoute
   VerifierMatriculeRoute: typeof VerifierMatriculeRoute
-  MembreIndexRoute: typeof MembreIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -375,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/opportunites'
       fullPath: '/opportunites'
       preLoaderRoute: typeof OpportunitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/membre': {
+      id: '/membre'
+      path: '/membre'
+      fullPath: '/membre'
+      preLoaderRoute: typeof MembreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -435,10 +447,10 @@ declare module '@tanstack/react-router' {
     }
     '/membre/': {
       id: '/membre/'
-      path: '/membre'
+      path: '/'
       fullPath: '/membre/'
       preLoaderRoute: typeof MembreIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -456,38 +468,38 @@ declare module '@tanstack/react-router' {
     }
     '/membre/profil': {
       id: '/membre/profil'
-      path: '/membre/profil'
+      path: '/profil'
       fullPath: '/membre/profil'
       preLoaderRoute: typeof MembreProfilRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/membre/fiche': {
       id: '/membre/fiche'
-      path: '/membre/fiche'
+      path: '/fiche'
       fullPath: '/membre/fiche'
       preLoaderRoute: typeof MembreFicheRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/membre/documents': {
       id: '/membre/documents'
-      path: '/membre/documents'
+      path: '/documents'
       fullPath: '/membre/documents'
       preLoaderRoute: typeof MembreDocumentsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/membre/cotisations': {
       id: '/membre/cotisations'
-      path: '/membre/cotisations'
+      path: '/cotisations'
       fullPath: '/membre/cotisations'
       preLoaderRoute: typeof MembreCotisationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/membre/carte': {
       id: '/membre/carte'
-      path: '/membre/carte'
+      path: '/carte'
       fullPath: '/membre/carte'
       preLoaderRoute: typeof MembreCarteRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof MembreRoute
     }
     '/admin/prestations': {
       id: '/admin/prestations'
@@ -547,6 +559,27 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface MembreRouteChildren {
+  MembreCarteRoute: typeof MembreCarteRoute
+  MembreCotisationsRoute: typeof MembreCotisationsRoute
+  MembreDocumentsRoute: typeof MembreDocumentsRoute
+  MembreFicheRoute: typeof MembreFicheRoute
+  MembreProfilRoute: typeof MembreProfilRoute
+  MembreIndexRoute: typeof MembreIndexRoute
+}
+
+const MembreRouteChildren: MembreRouteChildren = {
+  MembreCarteRoute: MembreCarteRoute,
+  MembreCotisationsRoute: MembreCotisationsRoute,
+  MembreDocumentsRoute: MembreDocumentsRoute,
+  MembreFicheRoute: MembreFicheRoute,
+  MembreProfilRoute: MembreProfilRoute,
+  MembreIndexRoute: MembreIndexRoute,
+}
+
+const MembreRouteWithChildren =
+  MembreRoute._addFileChildren(MembreRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActualitesRoute: ActualitesRoute,
@@ -556,17 +589,12 @@ const rootRouteChildren: RootRouteChildren = {
   ForumRoute: ForumRoute,
   InscriptionRoute: InscriptionRoute,
   LoginRoute: LoginRoute,
+  MembreRoute: MembreRouteWithChildren,
   OpportunitesRoute: OpportunitesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ScannerRoute: ScannerRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  MembreCarteRoute: MembreCarteRoute,
-  MembreCotisationsRoute: MembreCotisationsRoute,
-  MembreDocumentsRoute: MembreDocumentsRoute,
-  MembreFicheRoute: MembreFicheRoute,
-  MembreProfilRoute: MembreProfilRoute,
   VerifierMatriculeRoute: VerifierMatriculeRoute,
-  MembreIndexRoute: MembreIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
