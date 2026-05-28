@@ -23,7 +23,7 @@ export const Route = createFileRoute("/membre")({
     if (hasAdminRole) {
       // Redirection intelligente : super_admin -> miprojet, autres -> admin
       if (isSuperAdmin) {
-        throw redirect({ to: "/admin/miprojet" });
+        throw redirect({ to: "/miprojet" });
       }
       throw redirect({ to: "/admin" });
     }
