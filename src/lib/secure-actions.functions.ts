@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+const db = supabaseAdmin as any;
+
 const adminRoles = [
   "super_admin", "admin_national", "admin_regional", "admin_local", "agent_saisie",
   "president", "secretaire_general", "tresorier_national", "commissaire_comptes",
@@ -13,7 +15,7 @@ const adminRoles = [
 const memberStatusSchema = z.enum(["actif", "en_attente", "suspendu", "decede", "marie", "licencie", "assiste", "retraite"]);
 
 async function assertRole(userId: string, roles: string[]) {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await db
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
@@ -23,14 +25,14 @@ async function assertRole(userId: string, roles: string[]) {
 }
 
 async function countRows(table: string, filters?: (query: any) => any) {
-  let query = supabaseAdmin.from(table).select("id", { count: "exact", head: true });
+  let query = db.from(table).select("id", { count: "exact", head: true });
   if (filters) query = filters(query);
   const { count } = await query;
   return count ?? 0;
 }
 
 async function sumRows(table: string, column: string, filters?: (query: any) => any) {
-  let query = supabaseAdmin.from(table).select(column).limit(10000);
+  let query = db.from(table).select(column).limit(10000);
   if (filters) query = filters(query);
   const { data } = await query;
   return ((data as any[]) ?? []).reduce((sum, row) => sum + (Number(row[column]) || 0), 0);
