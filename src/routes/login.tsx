@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -25,6 +25,7 @@ function Page() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const doLogin = useServerFn(loginWithIdentifier);
+  const navigate = useNavigate();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,8 +53,13 @@ function Page() {
       // dashboard_path is computed server-side inside loginWithIdentifier
       // from this user's roles — no race condition possible.
       const target = res.dashboard_path || "/membre";
+      const { data: verified } = await supabase.auth.getUser();
+      if (!verified.user) {
+        setErrorMsg("Session non reconnue, veuillez réessayer.");
+        return;
+      }
       toast.success("Bienvenue !");
-      window.location.assign(target);
+      await navigate({ to: target, replace: true });
     } catch (err) {
       console.error("login failed", err);
       setErrorMsg("Identifiant ou mot de passe incorrect, veuillez réessayer.");
@@ -90,6 +96,7 @@ function Page() {
                   value={identifier}
                   onChange={(e) => { setIdentifier(e.target.value); if (errorMsg) setErrorMsg(null); }}
                   placeholder="Ex: 0758894363, mugecadmin ou admininoce"
+                  autoComplete="username"
                   aria-invalid={errorMsg ? true : undefined}
                   className={errorMsg ? "border-destructive focus-visible:ring-destructive" : undefined}
                 />
@@ -105,6 +112,7 @@ function Page() {
                     onChange={(e) => { setPassword(e.target.value); if (errorMsg) setErrorMsg(null); }}
                     className={`pr-10 ${errorMsg ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     aria-invalid={errorMsg ? true : undefined}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
