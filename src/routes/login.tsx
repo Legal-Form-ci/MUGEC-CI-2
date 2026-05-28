@@ -36,7 +36,7 @@ function Page() {
     }
     setLoading(true);
     try {
-      const res = await doLogin({ data: { identifier, password } });
+      const res = await doLogin({ data: { identifier, password, portal: "member" } });
       if (!res?.ok) {
         setErrorMsg("Identifiant ou mot de passe incorrect, veuillez réessayer.");
         return;
@@ -52,7 +52,7 @@ function Page() {
       }
       // dashboard_path is computed server-side inside loginWithIdentifier
       // from this user's roles — no race condition possible.
-      const target = res.dashboard_path || "/membre";
+      const target = "/membre";
       const { data: verified } = await supabase.auth.getUser();
       if (!verified.user) {
         setErrorMsg("Session non reconnue, veuillez réessayer.");
@@ -88,15 +88,17 @@ function Page() {
                 </div>
               )}
               <div>
-                <Label htmlFor="identifier">Identifiant (numéro de téléphone ou identifiant admin)</Label>
+                <Label htmlFor="identifier">Numéro de téléphone</Label>
                 <Input
                   id="identifier"
                   type="text"
                   required
                   value={identifier}
                   onChange={(e) => { setIdentifier(e.target.value); if (errorMsg) setErrorMsg(null); }}
-                  placeholder="Ex: 0758894363, mugecadmin ou inoceadmin"
-                  autoComplete="username"
+                  placeholder="Ex: 0759566087"
+                  inputMode="tel"
+                  pattern="[0-9]{6,}"
+                  autoComplete="tel"
                   aria-invalid={errorMsg ? true : undefined}
                   className={errorMsg ? "border-destructive focus-visible:ring-destructive" : undefined}
                 />
