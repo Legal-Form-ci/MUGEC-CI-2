@@ -13,8 +13,8 @@ export async function getCurrentSupabaseUser(): Promise<User | null> {
   if (!isSupabaseConfigured) return null;
   const storedUser = readStoredSession()?.user ?? null;
   const freshUser = supabase.auth
-    .getSession()
-    .then(({ data }) => data.session?.user ?? storedUser)
+    .getUser()
+    .then(({ data, error }) => (!error && data.user ? data.user : storedUser))
     .catch(() => storedUser);
   const timeout = new Promise<User | null>((resolve) => {
     window.setTimeout(() => resolve(storedUser), 800);
@@ -47,7 +47,7 @@ export const ADMIN_ROLES = [
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(() => readStoredSession());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
 
   useEffect(() => {
     let mounted = true;
@@ -56,9 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     setSession(readStoredSession());
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted) return;
       setSession(data.session ?? readStoredSession());
+      if (data.session) {
+        await supabase.auth.getUser().catch(() => null);
+      }
       setLoading(false);
     }).catch(() => {
       if (mounted) setLoading(false);

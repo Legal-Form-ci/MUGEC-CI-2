@@ -4,14 +4,14 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/admin")({
   ssr: false,
   beforeLoad: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
       throw redirect({ to: "/login" });
     }
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", session.user.id);
+      .eq("user_id", user.id);
     const allowed = new Set([
       "super_admin", "admin_national", "admin_regional", "admin_local", "agent_saisie",
       "president", "secretaire_general", "tresorier_national", "commissaire_comptes",
