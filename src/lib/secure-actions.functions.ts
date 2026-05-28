@@ -115,15 +115,15 @@ export const validatePrestationStepSecure = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ requestId: z.string().uuid(), action: z.enum(["valide", "rejete"]), motif: z.string().max(1000).optional() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: req, error: reqErr } = await supabaseAdmin.from("prestation_requests").select("*").eq("id", data.requestId).single();
+    const { data: req, error: reqErr } = await db.from("prestation_requests").select("*").eq("id", data.requestId).single();
     if (reqErr || !req) throw new Error("Demande introuvable");
     const required = ["delegue_section", "secretaire_regional", "secretaire_general", "tresorier_national"][Math.max(0, Number(req.step_validation) - 1)] ?? "system";
     await assertRole(context.userId, required === "system" ? ["super_admin"] : ["super_admin", required]);
     const now = new Date().toISOString();
-    const { error: valErr } = await supabaseAdmin.from("prestation_validations").insert({ request_id: data.requestId, niveau: req.step_validation, validateur_id: context.userId, role_requis: required, action: data.action, motif: data.motif ?? null, validated_at: now });
+    const { error: valErr } = await db.from("prestation_validations").insert({ request_id: data.requestId, niveau: req.step_validation, validateur_id: context.userId, role_requis: required, action: data.action, motif: data.motif ?? null, validated_at: now });
     if (valErr) throw new Error(valErr.message);
     const patch = data.action === "rejete" ? { statut_global: "rejete", motif_rejet: data.motif ?? null, closed_at: now, updated_at: now } : Number(req.step_validation) >= 4 ? { step_validation: 5, statut_global: "valide", closed_at: now, updated_at: now } : { step_validation: Number(req.step_validation) + 1, statut_global: "en_cours", updated_at: now };
-    const { error } = await supabaseAdmin.from("prestation_requests").update(patch).eq("id", data.requestId);
+    const { error } = await db.from("prestation_requests").update(patch).eq("id", data.requestId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -135,8 +135,8 @@ export const getMiprojetDashboardData = createServerFn({ method: "GET" })
     await assertRole(context.userId, ["super_admin"]);
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     const [{ data: tx }, { data: allTx }, parts_miprojet_mois, parts_mutuelle_mois, transactions_total, transactions_paye, transactions_attente] = await Promise.all([
-      supabaseAdmin.from("transactions_miprojet").select("id, montant, statut, reference, created_at, date_virement").order("created_at", { ascending: false }).range(data.page * 50, data.page * 50 + 49),
-      supabaseAdmin.from("transactions_miprojet").select("id, montant, statut, reference, created_at, date_virement").order("created_at", { ascending: false }).limit(1000),
+      db.from("transactions_miprojet").select("id, montant, statut, reference, created_at, date_virement").order("created_at", { ascending: false }).range(data.page * 50, data.page * 50 + 49),
+      db.from("transactions_miprojet").select("id, montant, statut, reference, created_at, date_virement").order("created_at", { ascending: false }).limit(1000),
       sumRows("subscriptions", "part_miprojet", (q) => q.eq("statut_paiement", "paye").gte("created_at", monthStart)),
       sumRows("subscriptions", "part_mutuelle", (q) => q.eq("statut_paiement", "paye").gte("created_at", monthStart)),
       sumRows("transactions_miprojet", "montant"),
@@ -150,7 +150,7 @@ export const getMemberPublicInfoSecure = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ matricule: z.string().trim().min(1).max(80) }).parse(input))
   .handler(async ({ data }) => {
-    const { data: member, error } = await supabaseAdmin.from("members").select("matricule, nom, prenoms, photo_url, collectivite, region, fonction, statut, type_membre, date_inscription").eq("matricule", data.matricule).maybeSingle();
+    const { data: member, error } = await db.from("members").select("matricule, nom, prenoms, photo_url, collectivite, region, fonction, statut, type_membre, date_inscription").eq("matricule", data.matricule).maybeSingle();
     if (error) throw new Error(error.message);
     return member;
   });
@@ -159,9 +159,9 @@ export const submitContactMessage = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ nom: z.string().trim().min(2).max(120), email: z.string().trim().email().max(255), telephone: z.string().trim().max(32).optional(), sujet: z.string().trim().max(200).optional(), message: z.string().trim().min(5).max(4000) }).parse(input))
   .handler(async ({ data }) => {
     const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const { count } = await supabaseAdmin.from("contact_messages").select("id", { count: "exact", head: true }).eq("email", data.email).gte("created_at", since);
+    const { count } = await db.from("contact_messages").select("id", { count: "exact", head: true }).eq("email", data.email).gte("created_at", since);
     if ((count ?? 0) >= 3) throw new Error("Trop de messages envoyés. Réessayez plus tard.");
-    const { error } = await supabaseAdmin.from("contact_messages").insert({ ...data, telephone: data.telephone || null, sujet: data.sujet || null, user_id: null });
+    const { error } = await db.from("contact_messages").insert({ ...data, telephone: data.telephone || null, sujet: data.sujet || null, user_id: null });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
