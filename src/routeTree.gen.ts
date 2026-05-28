@@ -13,6 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScannerRouteImport } from './routes/scanner'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OpportunitesRouteImport } from './routes/opportunites'
+import { Route as MiprojetRouteImport } from './routes/miprojet'
 import { Route as MembreRouteImport } from './routes/membre'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InscriptionRouteImport } from './routes/inscription'
@@ -54,6 +55,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const OpportunitesRoute = OpportunitesRouteImport.update({
   id: '/opportunites',
   path: '/opportunites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MiprojetRoute = MiprojetRouteImport.update({
+  id: '/miprojet',
+  path: '/miprojet',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembreRoute = MembreRouteImport.update({
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/inscription': typeof InscriptionRoute
   '/login': typeof LoginRoute
   '/membre': typeof MembreRouteWithChildren
+  '/miprojet': typeof MiprojetRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scanner': typeof ScannerRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/forum': typeof ForumRoute
   '/inscription': typeof InscriptionRoute
   '/login': typeof LoginRoute
+  '/miprojet': typeof MiprojetRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scanner': typeof ScannerRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/inscription': typeof InscriptionRoute
   '/login': typeof LoginRoute
   '/membre': typeof MembreRouteWithChildren
+  '/miprojet': typeof MiprojetRoute
   '/opportunites': typeof OpportunitesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scanner': typeof ScannerRoute
@@ -262,6 +271,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/login'
     | '/membre'
+    | '/miprojet'
     | '/opportunites'
     | '/reset-password'
     | '/scanner'
@@ -288,6 +298,7 @@ export interface FileRouteTypes {
     | '/forum'
     | '/inscription'
     | '/login'
+    | '/miprojet'
     | '/opportunites'
     | '/reset-password'
     | '/scanner'
@@ -316,6 +327,7 @@ export interface FileRouteTypes {
     | '/inscription'
     | '/login'
     | '/membre'
+    | '/miprojet'
     | '/opportunites'
     | '/reset-password'
     | '/scanner'
@@ -345,6 +357,7 @@ export interface RootRouteChildren {
   InscriptionRoute: typeof InscriptionRoute
   LoginRoute: typeof LoginRoute
   MembreRoute: typeof MembreRouteWithChildren
+  MiprojetRoute: typeof MiprojetRoute
   OpportunitesRoute: typeof OpportunitesRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ScannerRoute: typeof ScannerRoute
@@ -380,6 +393,13 @@ declare module '@tanstack/react-router' {
       path: '/opportunites'
       fullPath: '/opportunites'
       preLoaderRoute: typeof OpportunitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/miprojet': {
+      id: '/miprojet'
+      path: '/miprojet'
+      fullPath: '/miprojet'
+      preLoaderRoute: typeof MiprojetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/membre': {
@@ -590,6 +610,7 @@ const rootRouteChildren: RootRouteChildren = {
   InscriptionRoute: InscriptionRoute,
   LoginRoute: LoginRoute,
   MembreRoute: MembreRouteWithChildren,
+  MiprojetRoute: MiprojetRoute,
   OpportunitesRoute: OpportunitesRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ScannerRoute: ScannerRoute,

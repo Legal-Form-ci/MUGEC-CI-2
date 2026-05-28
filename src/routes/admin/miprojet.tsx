@@ -87,7 +87,7 @@ function fmtFCFA(n: number | undefined | null) {
   return `${(n ?? 0).toLocaleString("fr-FR")} F`;
 }
 
-function MiProjetDashboard() {
+export function MiProjetDashboard() {
   const navigate = useNavigate();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);

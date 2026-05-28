@@ -191,5 +191,5 @@ export const ADMIN_NAV: NavItem[] = [
 // Navigation séparée du back-office super administrateur.
 // NE JAMAIS importer dans l'espace MUGEC-CI.
 export const MIPROJET_NAV: NavItem[] = [
-  { to: "/admin/miprojet", label: "Tableau de bord" },
+  { to: "/miprojet", label: "Tableau de bord" },
 ];
