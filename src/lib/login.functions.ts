@@ -6,7 +6,15 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const inputSchema = z.object({
   identifier: z.string().trim().min(3).max(255),
   password: z.string().min(1).max(200),
+  portal: z.enum(["member", "admin", "miprojet"]),
 });
+
+const mugcecAdminRoles = [
+  "admin_national", "admin_regional", "admin_local", "agent_saisie",
+  "president", "secretaire_general", "tresorier_national", "commissaire_comptes",
+  "directeur_executif", "comite_controle", "conseil_sages", "secretaire_regional",
+  "tresorier_regional", "delegue_section",
+];
 
 /**
  * Server-side login by identifier (phone, admin login, or email).
@@ -24,19 +32,28 @@ export const loginWithIdentifier = createServerFn({ method: "POST" })
     const generic = { ok: false as const, error: "invalid_credentials" };
 
     let email: string | null = null;
-    if (data.identifier.includes("@")) {
-      email = data.identifier;
-    } else {
-      const { data: resolved, error } = await supabaseAdmin.rpc(
-        "resolve_login_email",
-        { p_identifier: data.identifier },
-      );
-      if (error) {
-        console.error("loginWithIdentifier: resolve failed", error);
-        return generic;
-      }
-      if (typeof resolved === "string" && resolved.length > 0) email = resolved;
+    const identifier = data.identifier.trim().toLowerCase();
+
+    if (data.portal === "member") {
+      const digits = identifier.replace(/\D/g, "");
+      if (!/^\d{6,}$/.test(digits) || identifier !== digits) return generic;
+      const { data: resolved, error } = await supabaseAdmin.rpc("lookup_member_email_by_phone", { p_phone: digits });
+      if (error || typeof resolved !== "string" || resolved.length === 0) return generic;
+      email = resolved;
     }
+
+    if (data.portal === "admin") {
+      if (["mugecadmin", "adminmgec"].includes(identifier)) {
+        email = "admin@mugec-ci.local";
+      }
+    }
+
+    if (data.portal === "miprojet") {
+      if (["admininoce", "inoceadmin"].includes(identifier)) {
+        email = "inoce@miprojet.local";
+      }
+    }
+
     if (!email) return generic;
 
     const SUPABASE_URL = process.env.SUPABASE_URL!;
@@ -51,19 +68,23 @@ export const loginWithIdentifier = createServerFn({ method: "POST" })
     });
     if (signInErr || !signIn.session || !signIn.user) return generic;
 
-    // Compute the dashboard path server-side from this user's roles.
-    let dashboard_path = "/membre";
-    try {
-      const { data: path, error: pathErr } = await supabaseAdmin.rpc(
-        "dashboard_path_for",
-        { _user_id: signIn.user.id },
-      );
-      if (!pathErr && typeof path === "string" && path.length > 0) {
-        dashboard_path = path;
-      }
-    } catch (err) {
-      console.error("loginWithIdentifier: dashboard_path_for failed", err);
+    const { data: roleRows, error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", signIn.user.id);
+    if (roleErr) {
+      console.error("loginWithIdentifier: roles failed", roleErr);
+      return generic;
     }
+    const roles = (roleRows ?? []).map((r) => String(r.role));
+    const isSuperAdmin = roles.includes("super_admin");
+    const isMugecAdmin = roles.some((role) => mugcecAdminRoles.includes(role));
+
+    if (data.portal === "member" && (isSuperAdmin || isMugecAdmin)) return generic;
+    if (data.portal === "admin" && (!isMugecAdmin || isSuperAdmin)) return generic;
+    if (data.portal === "miprojet" && !isSuperAdmin) return generic;
+
+    const dashboard_path = data.portal === "miprojet" ? "/miprojet" : data.portal === "admin" ? "/admin" : "/membre";
 
     return {
       ok: true as const,
