@@ -5,8 +5,8 @@ import { ADMIN_ROLES } from "@/lib/auth";
 export const Route = createFileRoute("/membre")({
   ssr: false,
   beforeLoad: async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error || !user) {
       throw redirect({ to: "/login" });
     }
     
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/membre")({
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", session.user.id);
+      .eq("user_id", user.id);
     
     const adminRolesSet = new Set(ADMIN_ROLES);
     const hasAdminRole = (roles ?? []).some((r) => adminRolesSet.has(String(r.role)));
