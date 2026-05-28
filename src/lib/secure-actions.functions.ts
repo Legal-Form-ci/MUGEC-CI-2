@@ -64,7 +64,7 @@ export const setMemberStatusSecure = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid(), statut: memberStatusSchema }).parse(input))
   .handler(async ({ data, context }) => {
     await assertRole(context.userId, adminRoles);
-    const { error } = await supabaseAdmin.from("members").update({ statut: data.statut }).eq("id", data.id);
+    const { error } = await db.from("members").update({ statut: data.statut }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -76,7 +76,7 @@ export const updateMemberSafe = createServerFn({ method: "POST" })
     await assertRole(context.userId, adminRoles);
     const allowed = ["nom", "prenoms", "email", "telephone", "cni", "adresse", "photo_url", "collectivite", "region", "direction", "fonction", "matricule_pro", "sexe", "lieu_naissance", "date_naissance", "date_embauche", "ayants_droit", "type_membre", "suspended_reason"];
     const patch = Object.fromEntries(allowed.filter((key) => key in data).map((key) => [key, data[key] === "" ? null : data[key]]));
-    const { error } = await supabaseAdmin.from("members").update(patch).eq("id", data.id);
+    const { error } = await db.from("members").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -86,7 +86,7 @@ export const markCotisationPaidSecure = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertRole(context.userId, adminRoles);
-    const { error } = await supabaseAdmin.from("cotisations").update({ statut: "paye", paye_le: new Date().toISOString() }).eq("id", data.id);
+    const { error } = await db.from("cotisations").update({ statut: "paye", paye_le: new Date().toISOString() }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -96,7 +96,7 @@ export const saveNotificationTemplateSecure = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ event: z.string().trim().min(1).max(120), channel: z.enum(["email", "sms", "whatsapp", "in_app"]), title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(4000), active: z.boolean().optional() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertRole(context.userId, ["super_admin"]);
-    const { error } = await supabaseAdmin.from("notification_templates").insert({ ...data, active: data.active ?? true });
+    const { error } = await db.from("notification_templates").insert({ ...data, active: data.active ?? true });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -106,7 +106,7 @@ export const toggleNotificationTemplateSecure = createServerFn({ method: "POST" 
   .inputValidator((input) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertRole(context.userId, ["super_admin"]);
-    const { error } = await supabaseAdmin.from("notification_templates").update({ active: data.active }).eq("id", data.id);
+    const { error } = await db.from("notification_templates").update({ active: data.active }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
